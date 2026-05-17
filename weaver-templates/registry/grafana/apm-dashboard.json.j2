@@ -5,11 +5,6 @@
   APM Dashboard generated from the OpenTelemetry semantic convention registry.
   This is the original apm-dashboard.json with metric names resolved from the
   semconv dependency at generation time via Weaver.
-
-  The only changes vs the original are:
-    - Metric names are Jinja2 variables resolved from the registry
-    - Unit conversions (/ 1000) removed for metrics now in seconds
-    - UID and title changed to avoid collision with the original
 #}
 {%- set ns = namespace(
   http_server_prom="http_server_request_duration",
@@ -741,7 +736,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "60s",
-          "legendFormat": "{{operation}}",
+          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
           "range": true,
           "refId": "RPS",
           "useBackend": false
@@ -756,7 +751,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "{{operation}}",
+          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
           "range": true,
           "refId": "ERR_PCT"
         },
@@ -770,7 +765,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "{{operation}}",
+          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
           "range": true,
           "refId": "Duration"
         }
@@ -961,7 +956,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "{{operation}}",
+          "legendFormat": "{% raw %}{{operation}}{% endraw %}",
           "range": true,
           "refId": "Duration"
         }
@@ -1129,7 +1124,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "60s",
-          "legendFormat": "{{server_address}} {{http_request_method}} {{url_template}}",
+          "legendFormat": "{% raw %}{{server_address}}{% endraw %} {% raw %}{{http_request_method}}{% endraw %} {% raw %}{{url_template}}{% endraw %}",
           "range": true,
           "refId": "RPS",
           "useBackend": false
@@ -1144,7 +1139,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "{{server_address}} {{http_request_method}} {{url_template}}",
+          "legendFormat": "{% raw %}{{server_address}}{% endraw %} {% raw %}{{http_request_method}}{% endraw %} {% raw %}{{url_template}}{% endraw %}",
           "range": true,
           "refId": "ERR_PCT"
         },
@@ -1158,7 +1153,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "{{server_address}} {{http_request_method}} {{url_template}}",
+          "legendFormat": "{% raw %}{{server_address}}{% endraw %} {% raw %}{{http_request_method}}{% endraw %} {% raw %}{{url_template}}{% endraw %}",
           "range": true,
           "refId": "DURATION"
         }
@@ -1317,7 +1312,7 @@
           "hide": false,
           "includeNullMetadata": true,
           "interval": "60s",
-          "legendFormat": "{{server_address}} {{db_namespace}}",
+          "legendFormat": "{% raw %}{{server_address}}{% endraw %} {% raw %}{{db_namespace}}{% endraw %}",
           "range": true,
           "refId": "RPS",
           "useBackend": false
@@ -1332,7 +1327,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "{{server_address}} {{db_namespace}}",
+          "legendFormat": "{% raw %}{{server_address}}{% endraw %} {% raw %}{{db_namespace}}{% endraw %}",
           "range": true,
           "refId": "ERR_PCT"
         },
@@ -1346,7 +1341,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "{{server_address}} {{db_namespace}}",
+          "legendFormat": "{% raw %}{{server_address}}{% endraw %} {% raw %}{{db_namespace}}{% endraw %}",
           "range": true,
           "refId": "DURATION"
         }

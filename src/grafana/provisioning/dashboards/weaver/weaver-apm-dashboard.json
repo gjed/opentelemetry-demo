@@ -687,7 +687,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "60s",
-          "legendFormat": "",
+          "legendFormat": "{{operation}}",
           "range": true,
           "refId": "RPS",
           "useBackend": false
@@ -702,7 +702,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "",
+          "legendFormat": "{{operation}}",
           "range": true,
           "refId": "ERR_PCT"
         },
@@ -716,7 +716,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "",
+          "legendFormat": "{{operation}}",
           "range": true,
           "refId": "Duration"
         }
@@ -907,7 +907,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "",
+          "legendFormat": "{{operation}}",
           "range": true,
           "refId": "Duration"
         }
@@ -1075,7 +1075,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "60s",
-          "legendFormat": "  ",
+          "legendFormat": "{{server_address}} {{http_request_method}} {{url_template}}",
           "range": true,
           "refId": "RPS",
           "useBackend": false
@@ -1090,7 +1090,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "  ",
+          "legendFormat": "{{server_address}} {{http_request_method}} {{url_template}}",
           "range": true,
           "refId": "ERR_PCT"
         },
@@ -1104,7 +1104,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": "  ",
+          "legendFormat": "{{server_address}} {{http_request_method}} {{url_template}}",
           "range": true,
           "refId": "DURATION"
         }
@@ -1263,7 +1263,7 @@
           "hide": false,
           "includeNullMetadata": true,
           "interval": "60s",
-          "legendFormat": " ",
+          "legendFormat": "{{server_address}} {{db_namespace}}",
           "range": true,
           "refId": "RPS",
           "useBackend": false
@@ -1278,7 +1278,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": " ",
+          "legendFormat": "{{server_address}} {{db_namespace}}",
           "range": true,
           "refId": "ERR_PCT"
         },
@@ -1292,7 +1292,7 @@
           "hide": false,
           "instant": false,
           "interval": "60s",
-          "legendFormat": " ",
+          "legendFormat": "{{server_address}} {{db_namespace}}",
           "range": true,
           "refId": "DURATION"
         }
