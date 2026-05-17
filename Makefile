@@ -417,3 +417,88 @@ endif
 .PHONY: build-react-native-android
 build-react-native-android:
 	$(DOCKER_CMD) build -f src/react-native-app/android.Dockerfile --platform=linux/amd64 --output=. src/react-native-app
+
+# ──────────────────────────────────────────────────────────────────────
+# Weaver Observability-by-Design demo targets
+# See WEAVER-DEMO.md for the full walkthrough.
+# ──────────────────────────────────────────────────────────────────────
+
+WEAVER_COMPOSE=$(DOCKER_COMPOSE_FILES) -f docker-compose-weaver.yml
+
+# Generate Grafana dashboard and alert rule from the telemetry schema.
+.PHONY: demo-generate
+demo-generate:
+	weaver registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies --include-unreferenced grafana
+
+# Copy generated artifacts from output/ to the Grafana provisioning directories.
+# Uses cp --update to avoid clobbering unchanged files; never deletes existing
+# non-generated files (alerts, dashboards placed by other means are safe).
+.PHONY: demo-provision
+demo-provision:
+	cp -v --update output/weaver-apm-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-apm-dashboard.json
+	cp -v --update output/weaver-comparison-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-comparison-dashboard.json
+	cp -v --update output/weaver-comparison-alerting.yml src/grafana/provisioning/alerting/weaver-comparison-alerting.yml
+	@echo ""
+	@echo "Generated artifacts copied to Grafana provisioning directories."
+
+# Remove generated Weaver artifacts (output dir + provisioned copies).
+.PHONY: demo-clean
+demo-clean:
+	rm -rf output/
+	rm -f src/grafana/provisioning/dashboards/weaver/weaver-apm-dashboard.json
+	rm -f src/grafana/provisioning/dashboards/weaver/weaver-comparison-dashboard.json
+	rm -f src/grafana/provisioning/alerting/weaver-comparison-alerting.yml
+	@echo "Generated artifacts removed."
+
+# Validate the telemetry schema is well-formed.
+.PHONY: demo-check
+demo-check:
+	weaver registry check --registry telemetry-schema/
+
+# Start the demo with the Weaver live-check sidecar (idempotent — no-op if already running).
+.PHONY: demo-start
+demo-start:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) $(WEAVER_COMPOSE) up --remove-orphans --detach
+	@echo ""
+	@echo "OpenTelemetry Demo with Weaver live-check is running."
+	@echo "Go to http://localhost:8080 for the demo UI."
+	@echo "Go to http://localhost:8080/grafana/ for the Grafana UI."
+	@echo "Go to http://localhost:8080/feature/ to toggle telemetrySchemaBreak."
+	@echo "Run 'make demo-logs' to see Weaver live-check output."
+	@echo "See WEAVER-DEMO.md for the full walkthrough."
+
+# Restart the demo from scratch (force-recreates all containers).
+.PHONY: demo-restart
+demo-restart:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) $(WEAVER_COMPOSE) up --force-recreate --remove-orphans --detach
+	@echo ""
+	@echo "OpenTelemetry Demo with Weaver live-check has been restarted."
+	@echo "Go to http://localhost:8080 for the demo UI."
+	@echo "Go to http://localhost:8080/grafana/ for the Grafana UI."
+	@echo "Go to http://localhost:8080/feature/ to toggle telemetrySchemaBreak."
+	@echo "Run 'make demo-logs' to see Weaver live-check output."
+	@echo "See WEAVER-DEMO.md for the full walkthrough."
+
+# Stop the demo (including Weaver sidecar).
+.PHONY: demo-stop
+demo-stop:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) $(WEAVER_COMPOSE) down --remove-orphans --volumes
+	@echo ""
+	@echo "Weaver demo is stopped."
+
+# Tail Weaver live-check logs.
+.PHONY: demo-logs
+demo-logs:
+	$(DOCKER_COMPOSE_CMD) $(WEAVER_COMPOSE) logs -f weaver
+
+# Send /stop to the Weaver sidecar and follow the logs until it exits.
+# NOTE: This stops the Weaver container — run 'make demo-start' to restart it.
+.PHONY: demo-livecheck
+demo-livecheck:
+	@curl -sf -X POST http://localhost:4320/stop || { echo "ERROR: Could not reach Weaver admin port (is the demo running?). Try 'make demo-start' first."; exit 1; }
+	@$(DOCKER_CMD) logs --since 2m -f weaver
+
+# Build only the payment service (useful after modifying charge.js).
+.PHONY: demo-build-payment
+demo-build-payment:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) build payment
