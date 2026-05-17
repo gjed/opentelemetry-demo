@@ -279,11 +279,21 @@ WEAVER_COMPOSE=-f docker-compose.yml -f docker-compose-weaver.yml
 # Generate Grafana dashboard and alert rule from the telemetry schema.
 .PHONY: demo-generate
 demo-generate:
-	weaver registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies grafana
-	cp -v output/weaver-demo-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard.json
-	cp -v output/weaver-demo-alerting.yml src/grafana/provisioning/alerting/weaver-demo-alerting.yml
+	weaver registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies --include-unreferenced grafana
+
+# Copy generated artifacts from output/ to the Grafana provisioning directories.
+.PHONY: demo-provision
+demo-provision:
+	cp -v output/weaver-apm-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-apm-dashboard.json
 	@echo ""
 	@echo "Generated artifacts copied to Grafana provisioning directories."
+
+# Remove generated Weaver artifacts (output dir + provisioned copies).
+.PHONY: demo-clean
+demo-clean:
+	rm -rf output/
+	rm -f src/grafana/provisioning/dashboards/weaver/weaver-apm-dashboard.json
+	@echo "Generated artifacts removed."
 
 # Validate the telemetry schema is well-formed.
 .PHONY: demo-check
