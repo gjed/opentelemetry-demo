@@ -268,3 +268,53 @@ start-profiling:
 	@echo "Go to http://localhost:8080/profiles/ for the Firepit UI."
 	@echo "Go to http://localhost:8080/telemetry/ for the Weaver generated telemetry documentation."
 	@echo "Go to https://opentelemetry.io/docs/demo/feature-flags/ to learn how to change feature flags."
+
+# ──────────────────────────────────────────────────────────────────────
+# Weaver Observability-by-Design demo targets
+# See WEAVER-DEMO.md for the full walkthrough.
+# ──────────────────────────────────────────────────────────────────────
+
+WEAVER_COMPOSE=-f docker-compose.yml -f docker-compose-weaver.yml
+
+# Generate Grafana dashboard and alert rule from the telemetry schema.
+.PHONY: demo-generate
+demo-generate:
+	weaver registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies grafana
+	cp -v output/weaver-demo-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard.json
+	cp -v output/weaver-demo-alerting.yml src/grafana/provisioning/alerting/weaver-demo-alerting.yml
+	@echo ""
+	@echo "Generated artifacts copied to Grafana provisioning directories."
+
+# Validate the telemetry schema is well-formed.
+.PHONY: demo-check
+demo-check:
+	weaver registry check --registry telemetry-schema/
+
+# Start the demo with the Weaver live-check sidecar.
+.PHONY: demo-start
+demo-start:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) $(WEAVER_COMPOSE) up --force-recreate --remove-orphans --detach
+	@echo ""
+	@echo "OpenTelemetry Demo with Weaver live-check is running."
+	@echo "Go to http://localhost:8080 for the demo UI."
+	@echo "Go to http://localhost:8080/grafana/ for the Grafana UI."
+	@echo "Go to http://localhost:8080/feature/ to toggle telemetrySchemaBreak."
+	@echo "Run 'make demo-logs' to see Weaver live-check output."
+	@echo "See WEAVER-DEMO.md for the full walkthrough."
+
+# Stop the demo (including Weaver sidecar).
+.PHONY: demo-stop
+demo-stop:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) $(WEAVER_COMPOSE) down --remove-orphans --volumes
+	@echo ""
+	@echo "Weaver demo is stopped."
+
+# Tail Weaver live-check logs.
+.PHONY: demo-logs
+demo-logs:
+	$(DOCKER_COMPOSE_CMD) $(WEAVER_COMPOSE) logs -f weaver
+
+# Build only the payment service (useful after modifying charge.js).
+.PHONY: demo-build-payment
+demo-build-payment:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) build payment
