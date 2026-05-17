@@ -1,0 +1,51 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# Docker Compose overlay for the Weaver Observability-by-Design scenario.
+# Usage: docker compose -f docker-compose.yml -f docker-compose-weaver.yml up
+
+networks:
+  default:
+    name: opentelemetry-demo
+    driver: bridge
+
+services:
+  weaver:
+    image: ${WEAVER_IMAGE}
+    container_name: weaver
+    command:
+      - registry
+      - live-check
+      - --registry
+      - /telemetry-schema
+      - --input-source
+      - otlp
+      - --otlp-grpc-port
+      - "4317"
+      - --otlp-grpc-address
+      - "0.0.0.0"
+      - --inactivity-timeout
+      - "0"
+      - --skip-policies
+      - --no-stats
+    ports:
+      - "4320:4320"   # admin port (/stop endpoint)
+    volumes:
+      - ./telemetry-schema:/telemetry-schema:ro
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    restart: unless-stopped
+    depends_on:
+      otel-collector:
+        condition: service_started
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  otel-collector:
+    volumes:
+      - ./src/otel-collector/otelcol-config-weaver.yml:/etc/otelcol-config-extras.yml
