@@ -1,0 +1,15 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# Weaver codegen config for Grafana dashboard and alerting artifacts.
+# Usage: weaver registry generate grafana --registry telemetry-schema/
+
+whitespace_control:
+  trim_blocks: true
+  lstrip_blocks: true
+
+templates:
+  - pattern: apm-dashboard.json.j2
+    filter: semconv_grouped_metrics
+    application_mode: single
+    file_name: "weaver-apm-dashboard.json"
