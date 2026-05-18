@@ -13,3 +13,13 @@ templates:
     filter: semconv_grouped_metrics
     application_mode: single
     file_name: "weaver-apm-dashboard.json"
+
+  - pattern: comparison-dashboard.json.j2
+    filter: semconv_grouped_metrics
+    application_mode: single
+    file_name: "weaver-comparison-dashboard.json"
+
+  - pattern: comparison-alerting.yml.j2
+    filter: semconv_grouped_metrics
+    application_mode: single
+    file_name: "weaver-comparison-alerting.yml"
