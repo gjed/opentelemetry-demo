@@ -1,0 +1,557 @@
+---
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: WeaverDemo.1m
+    folder: Weaver - Observability by Design
+    interval: 1m
+    rules:
+      - uid: weaver-app-ads-ad_requests
+        title: "Weaver: Ad request counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_ads_ad_requests_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app.ads.ad_requests is being emitted"
+          description: >-
+            The metric app.ads.ad_requests (app_ads_ad_requests_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "ad"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-app-confirmation-counter
+        title: "Weaver: Email confirmation counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_confirmation_counter_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app.confirmation.counter is being emitted"
+          description: >-
+            The metric app.confirmation.counter (app_confirmation_counter_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "email"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-app-currency
+        title: "Weaver: Currency conversion counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_currency_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app.currency is being emitted"
+          description: >-
+            The metric app.currency (app_currency_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "currency"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-app-frontend-requests
+        title: "Weaver: Frontend HTTP request counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_frontend_requests_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app.frontend.requests is being emitted"
+          description: >-
+            The metric app.frontend.requests (app_frontend_requests_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "frontend"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-app-payment-transactions
+        title: "Weaver: Payment transaction counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_payment_transactions_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app.payment.transactions is being emitted"
+          description: >-
+            The metric app.payment.transactions (app_payment_transactions_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "payment"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-app-shipping-items_count
+        title: "Weaver: Shipping items counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_shipping_items_count_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app.shipping.items_count is being emitted"
+          description: >-
+            The metric app.shipping.items_count (app_shipping_items_count_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "shipping"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-app_ai_assistant_counter
+        title: "Weaver: AI assistant request counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_ai_assistant_counter_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app_ai_assistant_counter is being emitted"
+          description: >-
+            The metric app_ai_assistant_counter (app_ai_assistant_counter_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "product_reviews"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-app_product_review_counter
+        title: "Weaver: Product review counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_product_review_counter_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app_product_review_counter is being emitted"
+          description: >-
+            The metric app_product_review_counter (app_product_review_counter_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "product_reviews"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-app_recommendations_counter
+        title: "Weaver: Recommendation request counter Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(app_recommendations_counter_total[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric app_recommendations_counter is being emitted"
+          description: >-
+            The metric app_recommendations_counter (app_recommendations_counter_total) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+          service_name: "recommendation"
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
