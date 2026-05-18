@@ -1,0 +1,23 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# OTel Collector extras config for Weaver live-check.
+# Adds a fan-out exporter that sends metrics and traces to the Weaver sidecar.
+
+exporters:
+  otlp_grpc/weaver:
+    endpoint: "weaver:4317"
+    tls:
+      insecure: true
+    compression: none
+    sending_queue:
+      batch:
+
+service:
+  pipelines:
+    traces:
+      exporters: [otlp_grpc/jaeger, debug, span_metrics, otlp_grpc/weaver]
+    metrics:
+      exporters: [otlp_http/prometheus, debug, otlp_grpc/weaver]
+    logs:
+      exporters: [opensearch, debug, otlp_grpc/weaver]
