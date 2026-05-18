@@ -338,6 +338,8 @@ services:
         limits:
           memory: 65M
     restart: unless-stopped
+    volumes:
+      - ./src/frontend-proxy/envoy.tmpl.yaml:/home/envoy/envoy.tmpl.yaml
     ports:
       - "${ENVOY_PORT}:${ENVOY_PORT}"
       - "${ENVOY_ADMIN_PORT}:${ENVOY_ADMIN_PORT}"
