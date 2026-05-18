@@ -7,9 +7,9 @@ Please provide a brief description of the changes here.
 For new features contributions, please make sure you have completed the following
 essential items:
 
-* [ ] `CHANGELOG.md` updated to document new feature additions
-* [ ] Appropriate documentation updates in the [docs][]
-* [ ] Appropriate Helm chart updates in the [helm-charts][]
+- [ ] `CHANGELOG.md` updated to document new feature additions
+- [ ] Appropriate documentation updates in the [docs]
+- [ ] Appropriate Helm chart updates in the [helm-charts]
 
 <!--
 A Pull Request that modifies instrumentation code will likely require an

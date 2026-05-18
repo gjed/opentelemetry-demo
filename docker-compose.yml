@@ -857,7 +857,7 @@ services:
       - ./src/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./src/grafana/provisioning/:/etc/grafana/provisioning/
     ports:
-      - "${GRAFANA_PORT}"
+      - "${GRAFANA_PORT}:${GRAFANA_PORT}"
     logging: *logging
 
   # OpenTelemetry Collector

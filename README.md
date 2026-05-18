@@ -1,4 +1,5 @@
 <!-- markdownlint-disable-next-line -->
+
 # <img src="https://opentelemetry.io/img/logos/opentelemetry-logo-nav.png" alt="OTel logo" width="45"> OpenTelemetry Demo
 
 [![Slack](https://img.shields.io/badge/slack-@cncf/otel/demo-brightgreen.svg?logo=slack)](https://cloud-native.slack.com/archives/C03B4CWV4DA)
@@ -60,7 +61,7 @@ adding a link below. The community is committed to maintaining the project and
 keeping it up to date for you.
 
 |                           |                |                                  |
-|---------------------------|----------------|----------------------------------|
+| ------------------------- | -------------- | -------------------------------- |
 | [AlibabaCloud LogService] | [Google Cloud] | [Parseable]                      |
 | [Amazon Web Services]     | [Grafana Labs] | [Sentry]                         |
 | [Apache Doris]            | [Guance]       | [ServiceNow Cloud Observability] |
@@ -94,8 +95,8 @@ For more information about the maintainer role, see the [community repository](h
 
 ### Approvers
 
-- [D&#xF3;nal O'Sullivan](https://github.com/osullivandonal), Elastic
-- [Piotr Kie&#x142;kowicz](https://github.com/Kielek), Splunk
+- [Dónal O'Sullivan](https://github.com/osullivandonal), Elastic
+- [Piotr Kiełkowicz](https://github.com/Kielek), Splunk
 - [Shenoy Pratik](https://github.com/ps48), AWS OpenSearch
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
@@ -118,51 +119,50 @@ For more information about the emeritus role, see the [community repository](htt
 
 [![contributors](https://contributors-img.web.app/image?repo=open-telemetry/opentelemetry-demo)](https://github.com/open-telemetry/opentelemetry-demo/graphs/contributors)
 
-[docs]: https://opentelemetry.io/docs/demo/
-
 <!-- Links for Demos featuring the Astronomy Shop section -->
 
-[AlibabaCloud LogService]: https://github.com/aliyun-sls/opentelemetry-demo
-[Amazon Web Services]: https://github.com/aws-observability/observability-best-practices/blob/main/sandbox/otel-demo-thegame/README.md
-[AppDynamics]: https://community.splunk.com/t5/AppDynamics-Knowledge-Base/How-to-observe-Kubernetes-deployment-of-OpenTelemetry-demo-app/ta-p/741454
-[Apache Doris]: https://github.com/apache/doris-opentelemetry-demo
-[Aspecto]: https://github.com/aspecto-io/opentelemetry-demo
-[Axiom]: https://play.axiom.co/axiom-play-qf1k/dashboards/otel.traces.otel-demo-traces
-[Axoflow]: https://axoflow.com/opentelemetry-support-in-more-detail-in-axosyslog-and-syslog-ng/
-[Azure Data Explorer]: https://github.com/Azure/Azure-kusto-opentelemetry-demo
-[Causely]: https://github.com/causely-oss/otel-demo
-[ClickStack]: https://github.com/ClickHouse/opentelemetry-demo
-[Coralogix]: https://coralogix.com/blog/configure-otel-demo-send-telemetry-data-coralogix
-[Dash0]: https://github.com/dash0hq/opentelemetry-demo
-[Datadog]: https://docs.datadoghq.com/opentelemetry/guide/otel_demo_to_datadog
-[Dynatrace]: https://www.dynatrace.com/news/blog/opentelemetry-demo-application-with-dynatrace/
-[Elastic]: https://github.com/elastic/opentelemetry-demo
-[Google Cloud]: https://github.com/GoogleCloudPlatform/opentelemetry-demo
-[Grafana Labs]: https://github.com/grafana/opentelemetry-demo
-[Guance]: https://github.com/GuanceCloud/opentelemetry-demo
-[Honeycomb.io]: https://github.com/honeycombio/opentelemetry-demo
-[Instana]: https://github.com/instana/opentelemetry-demo
-[Kloudfuse]: https://github.com/kloudfuse/opentelemetry-demo
-[Kopai]: https://github.com/kopai-app/opentelemetry-demo/tree/main/kopai
-[Last9]: https://last9.io/docs/integrations-opentelemetry-demo/
-[Liatrio]: https://github.com/liatrio/opentelemetry-demo
-[Logz.io]: https://logz.io/learn/how-to-run-opentelemetry-demo-with-logz-io/
-[New Relic]: https://github.com/newrelic/opentelemetry-demo
-[Oodle]: https://blog.oodle.ai/meet-oodle-unified-and-ai-native-observability/
-[OpenSearch]: https://github.com/opensearch-project/opentelemetry-demo
-[OpenObserve]: https://openobserve.ai/blog/opentelemetry-astronomy-shop-demo/
-[Oracle]: https://github.com/oracle-quickstart/oci-o11y-solutions/blob/main/knowledge-content/opentelemetry-demo
-[Parseable]: https://www.parseable.com/blog/open-telemetry-demo-with-parseable-a-complete-observability-setup
-[Sentry]: https://github.com/getsentry/opentelemetry-demo
-[ServiceNow Cloud Observability]: https://docs.lightstep.com/otel/quick-start-operator#send-data-from-the-opentelemetry-demo
-[SigNoz]: https://signoz.io/blog/opentelemetry-demo/
-[SolarWinds Observability]: https://github.com/solarwinds/opentelemetry-demo
-[Splunk]: https://github.com/signalfx/opentelemetry-demo
-[Sumo Logic]: https://www.sumologic.com/blog/common-opentelemetry-demo-application/
-[TelemetryHub]: https://github.com/TelemetryHub/opentelemetry-demo/tree/telemetryhub-backend
-[Teletrace]: https://github.com/teletrace/opentelemetry-demo
-[Tinybird]: https://github.com/tinybirdco/opentelemetry-demo
-[Tracetest]: https://github.com/kubeshop/opentelemetry-demo
-[Tsuga]: https://github.com/tsuga-dev/opentelemetry-demo
-[Uptrace]: https://github.com/uptrace/uptrace/tree/master/example/opentelemetry-demo
-[VictoriaMetrics]: https://github.com/VictoriaMetrics-Community/opentelemetry-demo
+[alibabacloud logservice]: https://github.com/aliyun-sls/opentelemetry-demo
+[amazon web services]: https://github.com/aws-observability/observability-best-practices/blob/main/sandbox/otel-demo-thegame/README.md
+[apache doris]: https://github.com/apache/doris-opentelemetry-demo
+[appdynamics]: https://community.splunk.com/t5/AppDynamics-Knowledge-Base/How-to-observe-Kubernetes-deployment-of-OpenTelemetry-demo-app/ta-p/741454
+[aspecto]: https://github.com/aspecto-io/opentelemetry-demo
+[axiom]: https://play.axiom.co/axiom-play-qf1k/dashboards/otel.traces.otel-demo-traces
+[axoflow]: https://axoflow.com/opentelemetry-support-in-more-detail-in-axosyslog-and-syslog-ng/
+[azure data explorer]: https://github.com/Azure/Azure-kusto-opentelemetry-demo
+[causely]: https://github.com/causely-oss/otel-demo
+[clickstack]: https://github.com/ClickHouse/opentelemetry-demo
+[coralogix]: https://coralogix.com/blog/configure-otel-demo-send-telemetry-data-coralogix
+[dash0]: https://github.com/dash0hq/opentelemetry-demo
+[datadog]: https://docs.datadoghq.com/opentelemetry/guide/otel_demo_to_datadog
+[docs]: https://opentelemetry.io/docs/demo/
+[dynatrace]: https://www.dynatrace.com/news/blog/opentelemetry-demo-application-with-dynatrace/
+[elastic]: https://github.com/elastic/opentelemetry-demo
+[google cloud]: https://github.com/GoogleCloudPlatform/opentelemetry-demo
+[grafana labs]: https://github.com/grafana/opentelemetry-demo
+[guance]: https://github.com/GuanceCloud/opentelemetry-demo
+[honeycomb.io]: https://github.com/honeycombio/opentelemetry-demo
+[instana]: https://github.com/instana/opentelemetry-demo
+[kloudfuse]: https://github.com/kloudfuse/opentelemetry-demo
+[kopai]: https://github.com/kopai-app/opentelemetry-demo/tree/main/kopai
+[last9]: https://last9.io/docs/integrations-opentelemetry-demo/
+[liatrio]: https://github.com/liatrio/opentelemetry-demo
+[logz.io]: https://logz.io/learn/how-to-run-opentelemetry-demo-with-logz-io/
+[new relic]: https://github.com/newrelic/opentelemetry-demo
+[oodle]: https://blog.oodle.ai/meet-oodle-unified-and-ai-native-observability/
+[openobserve]: https://openobserve.ai/blog/opentelemetry-astronomy-shop-demo/
+[opensearch]: https://github.com/opensearch-project/opentelemetry-demo
+[oracle]: https://github.com/oracle-quickstart/oci-o11y-solutions/blob/main/knowledge-content/opentelemetry-demo
+[parseable]: https://www.parseable.com/blog/open-telemetry-demo-with-parseable-a-complete-observability-setup
+[sentry]: https://github.com/getsentry/opentelemetry-demo
+[servicenow cloud observability]: https://docs.lightstep.com/otel/quick-start-operator#send-data-from-the-opentelemetry-demo
+[signoz]: https://signoz.io/blog/opentelemetry-demo/
+[solarwinds observability]: https://github.com/solarwinds/opentelemetry-demo
+[splunk]: https://github.com/signalfx/opentelemetry-demo
+[sumo logic]: https://www.sumologic.com/blog/common-opentelemetry-demo-application/
+[telemetryhub]: https://github.com/TelemetryHub/opentelemetry-demo/tree/telemetryhub-backend
+[teletrace]: https://github.com/teletrace/opentelemetry-demo
+[tinybird]: https://github.com/tinybirdco/opentelemetry-demo
+[tracetest]: https://github.com/kubeshop/opentelemetry-demo
+[tsuga]: https://github.com/tsuga-dev/opentelemetry-demo
+[uptrace]: https://github.com/uptrace/uptrace/tree/master/example/opentelemetry-demo
+[victoriametrics]: https://github.com/VictoriaMetrics-Community/opentelemetry-demo

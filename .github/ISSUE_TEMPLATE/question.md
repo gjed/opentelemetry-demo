@@ -1,8 +1,6 @@
----
-name: Question
-about: Create a question to help us improve our knowledge base and documentation
-labels: question
----
+______________________________________________________________________
+
+## name: Question about: Create a question to help us improve our knowledge base and documentation labels: question
 
 # Question
 

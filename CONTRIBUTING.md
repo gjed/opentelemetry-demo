@@ -34,7 +34,7 @@ through your first contribution.
 1. Create your [CNCF Slack account](https://slack.cncf.io/) and join the
    [otel-community-demo](https://app.slack.com/client/T08PSQ7BQ/C03B4CWV4DA)
    channel.
-2. Post in the room with an introduction to yourself, what area you are
+1. Post in the room with an introduction to yourself, what area you are
    interested in (check issues marked with [help
    wanted](https://github.com/open-telemetry/opentelemetry-demo/labels/help%20wanted)),
    and say you are looking for a buddy. We will match you with someone who has
@@ -53,15 +53,11 @@ Ensure you have the following installed:
 
 - [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [Make](https://www.gnu.org/software/make/)
-- [Docker][docker] with [Docker Compose][docker-compose] v2.0.0+
+- [Docker] with [Docker Compose][docker-compose] v2.0.0+
 
-Alternatively, [Podman][podman] 4.7.0+ can be used instead of Docker. See
+Alternatively, [Podman] 4.7.0+ can be used instead of Docker. See
 [Using Podman Instead of Docker](#using-podman-instead-of-docker) for setup
 instructions.
-
-[docker]: https://www.docker.com/get-started/
-[docker-compose]: https://docs.docker.com/compose/install/#install-compose
-[podman]: https://podman.io/getting-started/installation
 
 ### Clone the Repository
 
@@ -358,23 +354,26 @@ Maintainers can create a new release when desired by following these steps.
 1. Create a Pull Request that updates the `IMAGE_VERSION` environment variable
    in `.env` to the _new_ version number based on the format `x.x.x` and merge
    it.
-2. [Create a new
+1. [Create a new
    release](https://github.com/open-telemetry/opentelemetry-demo/releases/new),
    creating a new tag for the _new_ version number based on main. Automatically
    generate release notes. Prepend a summary of the major changes to the release
    notes.
-3. After images for the new release are built and published, create a new Pull
+1. After images for the new release are built and published, create a new Pull
    Request that updates the `CHANGELOG.md` with the new version leaving the
    `Unreleased` section for the next release. Merge the Pull Request.
-4. Create a new Pull Request to update the deployment of the demo in the
+1. Create a new Pull Request to update the deployment of the demo in the
    [OpenTelemetry Helm
    Charts](https://github.com/open-telemetry/opentelemetry-helm-charts) repo.
    Merge the Pull Request.
-5. After the Helm chart is released, create a new Pull Request which updates the
+1. After the Helm chart is released, create a new Pull Request which updates the
    Demo's Kubernetes manifest by running `make generate-kubernetes-manifests`.
    Merge the Pull Request.
 
-[docs]: https://opentelemetry.io/docs/demo/
-
 By following this guide, you'll have a smoother onboarding experience as a
 contributor. Happy coding!
+
+[docker]: https://www.docker.com/get-started/
+[docker-compose]: https://docs.docker.com/compose/install/#install-compose
+[docs]: https://opentelemetry.io/docs/demo/
+[podman]: https://podman.io/getting-started/installation

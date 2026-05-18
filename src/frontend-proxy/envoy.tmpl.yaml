@@ -139,6 +139,9 @@ static_resources:
   clusters:
     - name: opentelemetry_collector_grpc
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       typed_extension_protocol_options:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -156,6 +159,9 @@ static_resources:
                       port_value: ${OTEL_COLLECTOR_PORT_GRPC}
     - name: opentelemetry_collector_http
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: opentelemetry_collector_http
@@ -168,6 +174,9 @@ static_resources:
                       port_value: ${OTEL_COLLECTOR_PORT_HTTP}
     - name: frontend
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: frontend
@@ -180,6 +189,9 @@ static_resources:
                       port_value: ${FRONTEND_PORT}
     - name: image-provider
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: image-provider
@@ -192,6 +204,9 @@ static_resources:
                       port_value: ${IMAGE_PROVIDER_PORT}
     - name: flagservice
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: flagservice
@@ -204,6 +219,9 @@ static_resources:
                       port_value: ${FLAGD_PORT}
     - name: flagd-ui
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: flagd-ui
@@ -216,6 +234,9 @@ static_resources:
                       port_value: ${FLAGD_UI_PORT}
     - name: loadgen
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: loadgen
@@ -228,6 +249,9 @@ static_resources:
                       port_value: ${LOCUST_WEB_PORT}
     - name: grafana
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: grafana
@@ -240,6 +264,9 @@ static_resources:
                       port_value: ${GRAFANA_PORT}
     - name: jaeger
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: jaeger
@@ -252,6 +279,9 @@ static_resources:
                       port_value: ${JAEGER_UI_PORT}
     - name: telemetry-docs
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: telemetry-docs
@@ -264,6 +294,9 @@ static_resources:
                       port_value: ${TELEMETRY_DOCS_PORT}
     - name: profiles
       type: STRICT_DNS
+      dns_resolution_config:
+        dns_resolver_config:
+          "@type": type.googleapis.com/envoy.extensions.network.dns_resolver.getaddrinfo.v3.GetAddrInfoDnsResolverConfig
       lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: profiles

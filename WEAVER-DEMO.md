@@ -7,9 +7,9 @@ with Weaver's live-check, then flip a feature flag to break instrumentation and
 watch Weaver catch the drift in real time.
 
 **Jump to:**
-[Prerequisites](#prerequisites) · [Quick Start](#quick-start) · [Demo Walkthrough](#demo-walkthrough) · [How It Works](#how-it-works) · [Key Files](#key-files) · [Troubleshooting](#troubleshooting)
+[Prerequisites](#prerequisites) · [Quick Start](#quick-start) · [Demo Walkthrough](#demo-walkthrough) · [How It Works](#how-it-works) · [What Weaver Caught](#what-weaver-caught--and-what-it-could-have) · [Key Files](#key-files) · [Troubleshooting](#troubleshooting)
 
----
+______________________________________________________________________
 
 ## Prerequisites
 
@@ -30,13 +30,13 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 
 ### Make Targets
 
-| Target | Description |
-|--------|-------------|
-| `make demo-start` | Start the demo with Weaver live-check sidecar |
-| `make demo-stop` | Stop the demo (including Weaver) |
-| `make demo-logs` | Tail Weaver live-check output |
-| `make demo-generate` | Regenerate dashboard and alert from the schema |
-| `make demo-check` | Validate the telemetry schema |
+| Target                    | Description                                    |
+| ------------------------- | ---------------------------------------------- |
+| `make demo-start`         | Start the demo with Weaver live-check sidecar  |
+| `make demo-stop`          | Stop the demo (including Weaver)               |
+| `make demo-logs`          | Tail Weaver live-check output                  |
+| `make demo-generate`      | Regenerate dashboard and alert from the schema |
+| `make demo-check`         | Validate the telemetry schema                  |
 | `make demo-build-payment` | Rebuild the payment service after code changes |
 
 ## Demo Walkthrough
@@ -75,10 +75,10 @@ wrote them.
 ### Step 3 — Verify the Happy Path
 
 1. Open Grafana: <http://localhost:8080/grafana>
-2. Navigate to the **"Weaver - Observability by Design"** dashboard folder
-3. Open the **Weaver Demo** dashboard
-4. Confirm the **Payment Transactions Rate** panel shows live data
-5. Check **Alerting** — the payment liveness alert shows Normal or Alerting
+1. Navigate to the **"Weaver - Observability by Design"** dashboard folder
+1. Open the **Weaver Demo** dashboard
+1. Confirm the **Payment Transactions Rate** panel shows live data
+1. Check **Alerting** — the payment liveness alert shows Normal or Alerting
    (not NoData)
 
 ### Step 4 — Check Weaver Live-Check Conformance
@@ -95,7 +95,7 @@ telemetry conforms to the schema.
 Enable the `telemetrySchemaBreak` feature flag:
 
 1. Open the Feature Flag UI: <http://localhost:8080/feature>
-2. Toggle **telemetrySchemaBreak** to **on**
+1. Toggle **telemetrySchemaBreak** to **on**
 
 This causes the payment service to:
 
@@ -107,8 +107,8 @@ This causes the payment service to:
 Wait ~5 minutes for the 5-minute rate window to drain, then:
 
 1. **Dashboard breaks** — the "Payment Transactions Rate" panel shows **No data**
-2. **Alert breaks** — the payment liveness alert transitions to **NoData** state
-3. **Weaver catches it** — check the logs:
+1. **Alert breaks** — the payment liveness alert transitions to **NoData** state
+1. **Weaver catches it** — check the logs:
 
 ```bash
 make demo-logs
@@ -156,21 +156,107 @@ firing, and nobody knows why until an incident happens. With Weaver:
 - The **feature flag** (`telemetrySchemaBreak`) introduces intentional drift in
   the payment service to demonstrate detection
 
+## What Weaver Caught — and What It Could Have
+
+The demo dashboards and alerts in `src/grafana/provisioning/` reveal a real-world
+gap: several resources still reference outdated or misaligned metric names. An
+audit of every dashboard and alert rule (excluding the APM Dashboard, which was
+already updated) found two categories of drift.
+
+### What is broken
+
+**Spanmetrics Dashboard** (`spanmetrics-dashboard.json`) — every panel and both
+template variables show errors. The entire dashboard is built on spanmetrics
+connector output that is no longer being emitted:
+
+| Panel                                            | Broken metric                                             |
+| ------------------------------------------------ | --------------------------------------------------------- |
+| Top 3x3 - Service Latency - quantile95           | `traces_span_metrics_duration_milliseconds_bucket`        |
+| Top 7 Services Mean Rate over Range              | `traces_span_metrics_calls_total`                         |
+| Top 7 Services Mean ERROR Rate over Range        | `traces_span_metrics_calls_total`                         |
+| Top 7 span_names and Errors (APM Table)          | `traces_span_metrics_calls_total`                         |
+| Top 3x3 - span_name Latency - quantile95         | `traces_span_metrics_duration_milliseconds_bucket`        |
+| Top 7 Highest Endpoint Latencies Mean Over Range | `traces_span_metrics_duration_milliseconds_sum`, `_count` |
+| Top 7 Latencies Over Range                       | `traces_span_metrics_duration_milliseconds_sum`, `_count` |
+| Template variable `service`                      | sourced from `traces_span_metrics_calls_total`            |
+| Template variable `span_name`                    | sourced from `traces_span_metrics_calls_total`            |
+
+None of these metrics come from the OTel semantic conventions — they were
+synthesized by the Collector's spanmetrics connector using its own naming
+scheme and are no longer present.
+
+The **Demo Dashboard** (`demo-dashboard.json`) also uses
+`traces_span_metrics_*` metrics and legacy Python SDK runtime metrics
+(`process_runtime_cpython_*`, `otel_trace_span_processor_spans`), but these
+panels still render because the underlying data sources remain available. They
+are not semconv-aligned but are not visibly broken today.
+
+Everything else — the Exemplars, Linux, PostgreSQL, NGINX, and Collector
+dashboards, plus all alert rules — uses either current semconv metrics or
+infrastructure-specific metrics that are not subject to application-level semconv
+changes.
+
+### What Weaver already fixes
+
+The **APM Dashboard Weaver template** (`apm-dashboard.json.j2`) resolves
+canonical metric names from the semconv registry dependency declared in
+`telemetry-schema/manifest.yaml`:
+
+```yaml
+dependencies:
+  - name: otel
+    registry_path: https://github.com/open-telemetry/semantic-conventions/archive/refs/tags/v1.40.0.zip[model]
+```
+
+At codegen time, the template looks up `http.server.request.duration`,
+`rpc.server.call.duration`, and other semconv metrics, converts them to
+Prometheus naming, and generates PromQL expressions that always match the
+declared schema version. When the semconv version changes, re-running
+`make demo-generate` produces dashboards with the correct metric names
+automatically — no manual edits needed.
+
+This replaces the RED metrics panels from both the Demo Dashboard and the
+Spanmetrics Dashboard entirely.
+
+### What Weaver could fix — if registries existed
+
+The remaining broken metrics follow the same pattern: a component emits metrics,
+but does not publish a machine-readable registry for them. If it did, the same
+`dependencies` mechanism would catch drift at codegen time.
+
+| Emitter                                  | Metrics                                                                | Registry exists?                                                       | Weaver would catch drift?               |
+| ---------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------- |
+| **OTel semconv**                         | `http.server.request.duration`, `rpc.server.call.duration`             | ✅ Yes                                                                 | ✅ Already working                      |
+| **Application code**                     | `app.payment.transactions`, `app.cart.add_item.latency`                | ✅ Yes — `telemetry-schema/metrics/`                                   | ✅ Already working                      |
+| **OTel SDK runtime metrics**             | `process.runtime.cpython.cpu_time`, `process.runtime.cpython.memory`   | ⚠️ Definitions exist in semconv but not as a clean standalone registry | ✅ Yes — if declared as a dependency    |
+| **OTel SDK internal telemetry**          | `otel_trace_span_processor_spans`                                      | ❌ No published schema                                                 | ✅ Yes — if the SDK published one       |
+| **OTel Collector spanmetrics connector** | `traces_span_metrics_duration_milliseconds_*`                          | ❌ Output names are per-config, no registry                            | ✅ Yes — if the connector published one |
+| **OTel Collector internal telemetry**    | `otelcol_receiver_accepted_spans_total`, `otelcol_exporter_queue_size` | ❌ Documented in prose, no machine-readable registry                   | ✅ Yes — if the collector published one |
+
+The principle is universal: **any component that emits metrics should publish a
+machine-readable semconv registry for those metrics.** When it does, you declare
+it as a dependency, Weaver resolves the correct names at codegen time, and
+dashboards and alerts stay aligned across version upgrades automatically.
+
+This is the end-to-end promise of Observability by Design — it works today for
+application metrics and OTel semconv, and extends naturally to every telemetry
+emitter in the pipeline as registries become available.
+
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `telemetry-schema/` | Weaver-compatible YAML telemetry schema (attributes, metrics, services) |
-| `weaver-templates/registry/grafana/` | Jinja2 templates for codegen (dashboard + alerting) |
-| `weaver-templates/registry/grafana/weaver.yaml` | Weaver codegen configuration |
-| `docker-compose-weaver.yml` | Compose overlay adding the Weaver sidecar |
-| `src/otel-collector/otelcol-config-weaver.yml` | Collector extras config for OTLP fan-out to Weaver |
-| `src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard.json` | Generated Grafana dashboard |
-| `src/grafana/provisioning/alerting/weaver-demo-alerting.yml` | Generated Grafana alert rule |
-| `src/grafana/provisioning/dashboards/weaver.yaml` | Grafana dashboard provisioning config |
-| `src/flagd/demo.flagd.json` | Feature flags — includes `telemetrySchemaBreak` |
-| `src/payment/charge.js` | Payment service — reads the flag, conditionally breaks telemetry |
-| `.env` | Pins `WEAVER_IMAGE=otel/weaver:v0.23.0` |
+| File                                                                    | Purpose                                                                 |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `telemetry-schema/`                                                     | Weaver-compatible YAML telemetry schema (attributes, metrics, services) |
+| `weaver-templates/registry/grafana/`                                    | Jinja2 templates for codegen (dashboard + alerting)                     |
+| `weaver-templates/registry/grafana/weaver.yaml`                         | Weaver codegen configuration                                            |
+| `docker-compose-weaver.yml`                                             | Compose overlay adding the Weaver sidecar                               |
+| `src/otel-collector/otelcol-config-weaver.yml`                          | Collector extras config for OTLP fan-out to Weaver                      |
+| `src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard.json` | Generated Grafana dashboard                                             |
+| `src/grafana/provisioning/alerting/weaver-demo-alerting.yml`            | Generated Grafana alert rule                                            |
+| `src/grafana/provisioning/dashboards/weaver.yaml`                       | Grafana dashboard provisioning config                                   |
+| `src/flagd/demo.flagd.json`                                             | Feature flags — includes `telemetrySchemaBreak`                         |
+| `src/payment/charge.js`                                                 | Payment service — reads the flag, conditionally breaks telemetry        |
+| `.env`                                                                  | Pins `WEAVER_IMAGE=otel/weaver:v0.23.0`                                 |
 
 ## Troubleshooting
 
