@@ -15,7 +15,7 @@ const transformAddress = (address: Address) => ({
 });
 
 // Transform cart items from camelCase to snake_case for HTTP API
-const transformCartItems = (items: CartItem[]) => 
+const transformCartItems = (items: CartItem[]) =>
   items.map(item => ({
     product_id: item.productId,
     quantity: item.quantity,
@@ -42,7 +42,7 @@ const ShippingGateway = () => ({
     }
 
     const data = await response.json();
-    
+
     const costUsd = data.cost_usd ? {
       currencyCode: data.cost_usd.currency_code,
       units: data.cost_usd.units,
@@ -52,9 +52,9 @@ const ShippingGateway = () => ({
     const transformedResponse: GetQuoteResponse = {
       costUsd,
     };
-    
+
     return transformedResponse;
   },
 });
 
-export default ShippingGateway(); 
+export default ShippingGateway();

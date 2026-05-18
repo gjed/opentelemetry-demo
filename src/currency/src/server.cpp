@@ -82,7 +82,7 @@ namespace
     {"ZAR", 16.0583},
   };
 
-  std::string version = std::getenv("VERSION"); 
+  std::string version = std::getenv("VERSION");
   std::string name{ "currency" };
 
   nostd::unique_ptr<metrics_api::Counter<uint64_t>> currency_counter;
@@ -211,7 +211,7 @@ class CurrencyService final : public oteldemo::CurrencyService::Service
       span->SetStatus(StatusCode::kOk);
 
       logger->Info(std::string(__func__) + " conversion successful");
-      
+
       // End the span
       span->End();
       return Status::OK;
@@ -241,7 +241,7 @@ void RunServer(uint16_t port)
   std::string ip("0.0.0.0");
 
   const char* ipv6_enabled = std::getenv("IPV6_ENABLED");
-  
+
   if (ipv6_enabled == "true") {
     ip = "[::]";
     logger->Info("Overwriting Localhost IP: " + ip);

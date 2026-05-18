@@ -17,16 +17,16 @@ tool.
 
 The second request to the `/v1/chat/completions` endpoint should include the
 results of the database tool call (which is the list of product reviews for
-the specified product).  It then responds with the summary of product reviews
-for that product.  Note that the summaries were pre-generated using
+the specified product). It then responds with the summary of product reviews
+for that product. Note that the summaries were pre-generated using
 an LLM, and are stored in a JSON file to avoid calling an actual LLM each time.
 
 The service supports two feature flags:
 
-* `llmInaccurateResponse`: when this feature flag is enabled the LLM service
-returns an inaccurate product summary for product ID L9ECAV7KIM
-* `llmRateLimitError`: when this feature flag is enabled, the LLM service
-intermittently returns a RateLimitError with HTTP status code 429
+- `llmInaccurateResponse`: when this feature flag is enabled the LLM service
+  returns an inaccurate product summary for product ID L9ECAV7KIM
+- `llmRateLimitError`: when this feature flag is enabled, the LLM service
+  intermittently returns a RateLimitError with HTTP status code 429
 
 Note that the LLM service itself is not instrumented with OpenTelemetry.
 This is intentional, as we're treating it like a black box, just like

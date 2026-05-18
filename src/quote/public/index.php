@@ -95,7 +95,7 @@ $ipv6_enabled = getenv('IPV6_ENABLED');
 if ($ipv6_enabled == "true") {
     $ip = "[::]";
     echo "Overwriting Localhost IP: {$ip}" . PHP_EOL;
-} 
+}
 
 $address = $ip . ':' . getenv('QUOTE_PORT');
 

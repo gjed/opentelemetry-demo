@@ -92,7 +92,7 @@ public final class AdService {
     FlagdProvider flagdProvider = new FlagdProvider(options);
     // Set flagd as the OpenFeature Provider
     OpenFeatureAPI.getInstance().setProvider(flagdProvider);
-  
+
     server =
         ServerBuilder.forPort(port)
             .addService(new AdServiceImpl())
@@ -131,12 +131,12 @@ public final class AdService {
   }
 
   private static class AdServiceImpl extends oteldemo.AdServiceGrpc.AdServiceImplBase {
-    
+
     private static final String AD_FAILURE = "adFailure";
     private static final String AD_MANUAL_GC_FEATURE_FLAG = "adManualGc";
     private static final String AD_HIGH_CPU_FEATURE_FLAG = "adHighCpu";
     private static final Client ffClient = OpenFeatureAPI.getInstance().getClient();
-    
+
     private AdServiceImpl() {}
 
     /**

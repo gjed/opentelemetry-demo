@@ -197,7 +197,7 @@ func loadProductsFromDB(ctx context.Context) ([]*pb.Product, error) {
 
 	// Query all products with categories
 	rows, err := db.QueryContext(ctx, `
-		SELECT p.id, p.name, p.description, p.picture, 
+		SELECT p.id, p.name, p.description, p.picture,
 		       p.price_currency_code, p.price_units, p.price_nanos, p.categories
 		FROM catalog.products p
 		ORDER BY p.id
@@ -223,7 +223,7 @@ func searchProductsFromDB(ctx context.Context, query string) ([]*pb.Product, err
 	// Query products matching search query in name or description
 	searchPattern := "%" + strings.ToLower(query) + "%"
 	rows, err := db.QueryContext(ctx, `
-		SELECT p.id, p.name, p.description, p.picture, 
+		SELECT p.id, p.name, p.description, p.picture,
 		       p.price_currency_code, p.price_units, p.price_nanos, p.categories
 		FROM catalog.products p
 		WHERE LOWER(p.name) LIKE $1 OR LOWER(p.description) LIKE $1
@@ -249,7 +249,7 @@ func getProductFromDB(ctx context.Context, productID string) (*pb.Product, error
 
 	// Query single product by ID
 	row := db.QueryRowContext(ctx, `
-		SELECT p.id, p.name, p.description, p.picture, 
+		SELECT p.id, p.name, p.description, p.picture,
 		       p.price_currency_code, p.price_units, p.price_nanos, p.categories
 		FROM catalog.products p
 		WHERE p.id = $1

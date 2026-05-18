@@ -87,4 +87,3 @@ Health::Service::~Service() {
 }  // namespace grpc
 }  // namespace health
 }  // namespace v1
-

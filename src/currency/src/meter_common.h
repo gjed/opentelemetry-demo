@@ -16,7 +16,7 @@ namespace otlp_exporter = opentelemetry::exporter::otlp;
 
 namespace
 {
-  void initMeter() 
+  void initMeter()
   {
     // Build MetricExporter
     otlp_exporter::OtlpGrpcMetricExporterOptions otlpOptions;

@@ -12,11 +12,11 @@ The application can be run with the rest of the demo using the documented
 
 ## Local development
 
-* Run `mix setup` to install and setup dependencies
-* Create a `data` folder: `mkdir data`.
-* Copy [../flagd/demo.flagd.json](../flagd/demo.flagd.json) to `./data/demo.flagd.json`
-  * `cp ../flagd/demo.flagd.json ./data/demo.flagd.json`
-* Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+- Run `mix setup` to install and setup dependencies
+- Create a `data` folder: `mkdir data`.
+- Copy [../flagd/demo.flagd.json](../flagd/demo.flagd.json) to `./data/demo.flagd.json`
+  - `cp ../flagd/demo.flagd.json ./data/demo.flagd.json`
+- Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
 
 Now you can visit `localhost:4000` from your browser.
 
@@ -79,5 +79,5 @@ $ curl --header "Content-Type: application/json" \
 In addition to the `/read` and `/write` endpoint, we also offer these endpoint
 to stay compatible with the old version of Flagd-ui:
 
-* `/read-file` (`GET`)
-* `/write-to-file` (`POST`)
+- `/read-file` (`GET`)
+- `/write-to-file` (`POST`)
