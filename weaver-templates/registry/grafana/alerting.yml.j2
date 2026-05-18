@@ -1,0 +1,91 @@
+{#
+  Copyright The OpenTelemetry Authors
+  SPDX-License-Identifier: Apache-2.0
+
+  Grafana alerting rules generated from the OpenTelemetry Demo telemetry schema.
+  This template produces a liveness alert for each counter metric.
+
+  When a metric is renamed or dropped (telemetry drift), the alert goes to NoData.
+#}
+---
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: WeaverDemo.1m
+    folder: Weaver - Observability by Design
+    interval: 1m
+    rules:
+{% for root_ns in ctx %}
+{% for metric in root_ns.metrics %}
+{% if metric.instrument == "counter" %}
+{% set prom_name = metric.metric_name | replace(".", "_") + "_total" %}
+{% set service_name = "" %}
+{% if metric.annotations is defined and metric.annotations.service is defined %}
+{% set service_name = metric.annotations.service %}
+{% endif %}
+      - uid: weaver-{{ metric.metric_name | replace(".", "-") }}
+        title: "Weaver: {{ metric.brief | default(metric.metric_name, true) }} Liveness"
+        condition: threshold
+        data:
+          - refId: metric_rate
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate({{ prom_name }}[5m]))"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: metric_rate
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - threshold
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: metric_rate
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        keepFiringFor: 2m
+        annotations:
+          summary: "Schema metric {{ metric.metric_name }} is being emitted"
+          description: >-
+            The metric {{ metric.metric_name }} ({{ prom_name }}) is being
+            emitted at a non-zero rate. If this alert goes to NoData, the metric
+            has stopped being emitted — likely due to a metric rename or
+            instrumentation drift.
+        labels:
+{% if service_name %}
+          service_name: "{{ service_name }}"
+{% endif %}
+          service_namespace: opentelemetry-demo
+          severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+{% endif %}
+{% endfor %}
+{% endfor %}
