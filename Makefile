@@ -347,7 +347,7 @@ demo-logs:
 .PHONY: demo-livecheck
 demo-livecheck:
 	@curl -sf -X POST http://localhost:4320/stop || { echo "ERROR: Could not reach Weaver admin port (is the demo running?). Try 'make demo-start' first."; exit 1; }
-	@$(DOCKER_CMD) logs -f weaver
+	@$(DOCKER_CMD) logs --since 2m -f weaver
 
 # Build only the payment service (useful after modifying charge.js).
 .PHONY: demo-build-payment
