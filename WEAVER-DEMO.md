@@ -33,7 +33,7 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 | Target                    | Description                                    |
 | ------------------------- | ---------------------------------------------- |
 | `make demo-start`         | Start the demo (idempotent, no-op if running)  |
-| `make demo-restart`       | Restart the demo from scratch (force-recreate)  |
+| `make demo-restart`       | Restart the demo from scratch (force-recreate) |
 | `make demo-stop`          | Stop the demo (including Weaver)               |
 | `make demo-logs`          | Tail Weaver live-check output                  |
 | `make demo-generate`      | Regenerate dashboard and alert from the schema |
