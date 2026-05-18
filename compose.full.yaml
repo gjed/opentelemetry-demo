@@ -99,7 +99,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 620M
+          memory: 1240M
     restart: unless-stopped
     environment:
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_HOST}:9092

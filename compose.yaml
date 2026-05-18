@@ -124,7 +124,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 20M
+          memory: 40M
     restart: unless-stopped
     ports:
       - "${CHECKOUT_PORT}"
@@ -329,7 +329,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 90M
+          memory: 180M
     restart: unless-stopped
     volumes:
       - ./src/frontend-proxy/envoy.tmpl.yaml:/home/envoy/envoy.tmpl.yaml
@@ -479,7 +479,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 140M
+          memory: 280M
     restart: unless-stopped
     ports:
       - "${PAYMENT_PORT}"
@@ -528,7 +528,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 20M
+          memory: 40M
     restart: unless-stopped
     ports:
       - "${PRODUCT_CATALOG_PORT}"
@@ -578,7 +578,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 40M
+          memory: 80M
     restart: unless-stopped
     ports:
       - "${QUOTE_PORT}"
@@ -661,7 +661,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 20M
+          memory: 40M
     restart: unless-stopped
     ports:
       - "${SHIPPING_PORT}"
@@ -704,7 +704,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 75M
+          memory: 150M
     restart: unless-stopped
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
@@ -736,7 +736,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 200M
+          memory: 400M
     restart: always
     environment:
       - FLAGD_UI_PORT
@@ -799,7 +799,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 80M
+          memory: 160M
     restart: unless-stopped
     ports:
       - ${POSTGRES_PORT}
@@ -824,7 +824,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 20M
+          memory: 40M
     restart: unless-stopped
     ports:
       - "${VALKEY_PORT}"
@@ -849,7 +849,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 800M
     restart: unless-stopped
     command:
       - --config=/etc/otelcol-config.yml
