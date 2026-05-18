@@ -35,7 +35,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
     restart: unless-stopped
     depends_on:
       otel-collector:
