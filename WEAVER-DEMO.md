@@ -32,11 +32,13 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 
 | Target                    | Description                                    |
 | ------------------------- | ---------------------------------------------- |
-| `make demo-start`         | Start the demo with Weaver live-check sidecar  |
+| `make demo-start`         | Start the demo (idempotent, no-op if running)  |
+| `make demo-restart`       | Restart the demo from scratch (force-recreate)  |
 | `make demo-stop`          | Stop the demo (including Weaver)               |
 | `make demo-logs`          | Tail Weaver live-check output                  |
 | `make demo-generate`      | Regenerate dashboard and alert from the schema |
 | `make demo-check`         | Validate the telemetry schema                  |
+| `make demo-livecheck`     | Stop Weaver and print the live-check report    |
 | `make demo-build-payment` | Rebuild the payment service after code changes |
 
 ## Demo Walkthrough
@@ -199,64 +201,93 @@ changes.
 ### Why some APM panels work and others do not
 
 The original **APM Dashboard** (`apm-dashboard.json`) queries both
-`http_server_request_duration_seconds` (new semconv) and
-`rpc_server_duration_milliseconds` (old semconv). Whether a panel renders
+`http_server_request_duration_seconds` (new HTTP semconv) and
+`rpc_server_duration_milliseconds` (old RPC semconv). Whether a panel renders
 depends on which OTel SDK each service uses — and different SDKs have migrated
 to the new semconv metric names at different times.
 
-**HTTP services — new semconv** (`http.server.request.duration`, unit seconds):
+The following data was verified by querying live Prometheus metrics. The
+situation is worse than any single "old vs new" split — services emit **five
+different metric names** across three naming conventions.
 
-| Service  | Language  | SDK / Agent                         |
-| -------- | --------- | ----------------------------------- |
-| frontend | Node.js   | OTel JS SDK-Node 0.217.0            |
-| cart     | C# (.NET) | OTel .NET SDK 1.15.3                |
-| email    | Ruby      | OTel Ruby SDK 1.11.0                |
-| shipping | Rust      | OTel Rust SDK 0.31.0 (actix-web)    |
-| quote    | PHP       | OTel PHP SDK 1.14.0                 |
-| flagd-ui | Elixir    | OTel Erlang/Elixir ~1.7.0 (Phoenix) |
+**`http_server_request_duration_seconds`** (new HTTP semconv, seconds):
 
-These services emit `http_server_request_duration_seconds` — the APM Dashboard
-HTTP panels work for all of them.
+| Service | Language  | SDK / Agent          |
+| ------- | --------- | -------------------- |
+| cart    | C# (.NET) | OTel .NET SDK 1.15.3 |
 
-**gRPC services — old semconv** (`rpc.server.duration`, unit milliseconds):
+**`http_server_duration_milliseconds`** (old HTTP semconv, milliseconds):
 
-| Service         | Language | SDK / Agent                         |
-| --------------- | -------- | ----------------------------------- |
-| checkout        | Go       | otelgrpc 0.68.0                     |
-| product-catalog | Go       | otelgrpc 0.68.0                     |
-| payment         | Node.js  | @opentelemetry/instrumentation-grpc |
-| recommendation  | Python   | opentelemetry-instrumentation-grpc  |
-| product-reviews | Python   | opentelemetry-instrumentation-grpc  |
+| Service  | Language | SDK / Agent              |
+| -------- | -------- | ------------------------ |
+| frontend | Node.js  | OTel JS SDK-Node 0.217.0 |
 
-These services still emit `rpc_server_duration_milliseconds` — the old metric
-name. The original APM Dashboard handles this with a `/1000` divisor to convert
-to seconds.
+**`http_server_duration_seconds`** (yet another variant, seconds):
 
-**gRPC services — new semconv** (`rpc.server.call.duration`, unit seconds):
+| Service  | Language | SDK / Agent                      |
+| -------- | -------- | -------------------------------- |
+| shipping | Rust     | OTel Rust SDK 0.31.0 (actix-web) |
+
+**`rpc_server_call_duration_seconds`** (new RPC semconv, seconds):
+
+| Service         | Language | SDK / Agent     |
+| --------------- | -------- | --------------- |
+| checkout        | Go       | otelgrpc 0.68.0 |
+| product-catalog | Go       | otelgrpc 0.68.0 |
+
+**`rpc_server_duration_milliseconds`** (old RPC semconv, milliseconds):
 
 | Service | Language | SDK / Agent       |
 | ------- | -------- | ----------------- |
 | ad      | Java     | Java Agent 2.25.0 |
 
-The Java agent (>= 2.5.0) emits `rpc_server_call_duration_seconds` — the new
-metric name. The Weaver-generated APM Dashboard queries this name.
+**No server duration metrics emitted:**
 
-**No server metrics emitted:**
+| Service         | Reason                                                  |
+| --------------- | ------------------------------------------------------- |
+| payment         | Node.js gRPC — no server duration metrics in Prometheus |
+| recommendation  | Python gRPC — no server duration metrics in Prometheus  |
+| product-reviews | Python gRPC — no server duration metrics in Prometheus  |
+| email           | Ruby HTTP — no server duration metrics in Prometheus    |
+| quote           | PHP HTTP — no server duration metrics in Prometheus     |
+| flagd-ui        | Elixir HTTP — no server duration metrics in Prometheus  |
+| currency        | C++ — manual instrumentation only, no auto-metrics      |
+| accounting      | Kafka consumer, no HTTP/gRPC server                     |
+| fraud-detection | Kafka consumer, no HTTP/gRPC server                     |
+| image-provider  | Nginx OTel module does tracing only, no metrics         |
+| frontend-proxy  | Envoy native stats, not OTel SDK metrics                |
+| llm             | No OTel instrumentation                                 |
+| load-generator  | Client only (Locust)                                    |
 
-| Service         | Reason                                             |
-| --------------- | -------------------------------------------------- |
-| currency        | C++ — manual instrumentation only, no auto-metrics |
-| accounting      | Kafka consumer, no HTTP/gRPC server                |
-| fraud-detection | Kafka consumer, no HTTP/gRPC server                |
-| image-provider  | Nginx OTel module does tracing only, no metrics    |
-| frontend-proxy  | Envoy native stats, not OTel SDK metrics           |
-| llm             | No OTel instrumentation                            |
-| load-generator  | Client only (Locust)                               |
+**The result: neither APM dashboard covers all services.**
+
+The **original APM Dashboard** (`apm-dashboard.json`) hardcodes
+`http_server_request_duration_seconds` (new HTTP) and
+`rpc_server_duration_milliseconds` (old RPC, with `/1000` divisor). This means:
+
+- HTTP panels work for **cart** but not **frontend** (old naming) or
+  **shipping** (different variant)
+- RPC panels work for **ad** but not **checkout** or **product-catalog** (new
+  naming)
+
+The **Weaver-generated APM Dashboard** resolves `http.server.request.duration`
+and `rpc.server.call.duration` from the semconv registry, producing the new
+metric names. This means:
+
+- HTTP panels work for **cart** only
+- RPC panels work for **checkout** and **product-catalog** only
+
+| Dashboard            | HTTP works for | HTTP broken for    | RPC works for             | RPC broken for            |
+| -------------------- | -------------- | ------------------ | ------------------------- | ------------------------- |
+| Original APM         | cart           | frontend, shipping | ad                        | checkout, product-catalog |
+| Weaver-generated APM | cart           | frontend, shipping | checkout, product-catalog | ad                        |
 
 This is exactly the kind of silent fragmentation that a schema-driven approach
-prevents. If every SDK published a machine-readable registry declaring which
-metric names it emits, the dashboard template could resolve the correct names
-at codegen time instead of hardcoding assumptions.
+prevents. Five different metric names for the same concept across six services
+— because each OTel SDK implements the semconv migration on its own schedule.
+If every SDK published a machine-readable registry declaring which metric names
+it emits, the dashboard template could resolve the correct names at codegen
+time instead of hardcoding assumptions.
 
 ### What Weaver already fixes
 
