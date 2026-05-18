@@ -52,6 +52,12 @@ composer.lock
 /src/currency/proto
 /src/frontend/pb
 
+# Weaver codegen output
+/output/
+
+# OpenSpec
+/openspec/
+
 # Otel Demo specific
 docker-compose.override.yml
 
