@@ -1,0 +1,110 @@
+{#
+  Copyright The OpenTelemetry Authors
+  SPDX-License-Identifier: Apache-2.0
+
+  Grafana dashboard generated from the OpenTelemetry Demo telemetry schema.
+  This template produces a dashboard with one timeseries panel per metric.
+
+  Prometheus naming: dots become underscores, counters get _total suffix.
+#}
+{%- set ns = namespace(panel_id=1, y_pos=3) -%}
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": {{ ns.panel_id }},
+      {%- set ns.panel_id = ns.panel_id + 1 %}
+      "options": {
+        "content": "This dashboard was **generated from the telemetry schema** using `weaver registry generate grafana`.\nPanels query metrics defined in `telemetry-schema/metrics/`. When instrumentation drifts from the schema, panels break.",
+        "mode": "markdown"
+      },
+      "title": "Weaver-Generated Dashboard",
+      "type": "text"
+    }
+    {%- for root_ns in ctx %}
+    {%- for metric in root_ns.metrics %}
+    ,{
+      "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "{{ metric.unit | default('short', true) }}"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": {{ (loop.index0 % 2) * 12 }}, "y": {{ ns.y_pos }} },
+      {%- if loop.index0 % 2 == 1 %}
+      {%- set ns.y_pos = ns.y_pos + 8 %}
+      {%- endif %}
+      "id": {{ ns.panel_id }},
+      {%- set ns.panel_id = ns.panel_id + 1 %}
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
+          "editorMode": "code",
+          {%- set prom_name = metric.metric_name | replace(".", "_") %}
+          {%- if metric.instrument == "counter" %}
+          {%- set prom_name = prom_name + "_total" %}
+          "expr": "rate({{ prom_name }}[$__rate_interval])",
+          {%- elif metric.instrument == "histogram" %}
+          {%- set prom_name = prom_name + "_bucket" %}
+          "expr": "histogram_quantile(0.95, sum by (le) (rate({{ prom_name }}[$__rate_interval])))",
+          {%- else %}
+          "expr": "{{ prom_name }}",
+          {%- endif %}
+          "interval": "2m",
+          "legendFormat": "{% raw %}{{{% endraw %}job{% raw %}}}{% endraw %}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "{{ metric.brief | default(metric.metric_name, true) }}",
+      "description": "{{ metric.note | default('', true) | replace('"', '\\"') | replace('\n', ' ') }}",
+      "type": "timeseries"
+    }
+    {%- endfor %}
+    {%- if root_ns.metrics | length % 2 == 1 %}
+    {%- set ns.y_pos = ns.y_pos + 8 %}
+    {%- endif %}
+    {%- endfor %}
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 40,
+  "tags": ["weaver", "generated"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Weaver Demo - Schema-Generated Dashboard",
+  "uid": "weaver-demo-generated",
+  "version": 1
+}
