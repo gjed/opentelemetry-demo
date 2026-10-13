@@ -1,0 +1,18 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# Semantic conventions v1.44.0 moved GenAI attributes to
+# https://github.com/open-telemetry/semantic-conventions-genai and excludes
+# them from dependency resolution. That registry has no release yet, so the
+# attribute the demo emits is defined here until it can be referenced.
+file_format: definition/2
+attributes:
+  - key: gen_ai.input.messages
+    type: string
+    brief: The chat history provided to the model as an input.
+    stability: development
+    note: >
+      Recorded by the load generator as a JSON string following the GenAI
+      input messages schema. Messages are in the order they were sent to the
+      model. May contain user-provided content.
+    examples: ['[{"role": "user", "parts": [{"type": "text", "content": "Which telescope should I buy?"}]}]']

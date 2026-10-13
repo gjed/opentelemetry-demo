@@ -20,7 +20,7 @@ RUN /weaver/weaver registry generate \
 
 RUN /weaver/weaver registry package \
     --registry=./telemetry-schema \
-    --resolved-schema-uri=https://opentelemetry.io/schemas/1.40.0 \
+    --resolved-schema-uri=https://opentelemetry.io/schemas/1.44.0 \
     --output=./docs/schema \
     --v2
 
