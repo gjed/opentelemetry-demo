@@ -298,7 +298,7 @@ canonical metric names from the semconv registry dependency declared in
 ```yaml
 dependencies:
   - name: otel
-    registry_path: https://github.com/open-telemetry/semantic-conventions/archive/refs/tags/v1.40.0.zip[model]
+    registry_path: https://github.com/open-telemetry/semantic-conventions/archive/refs/tags/v1.44.0.zip[model]
 ```
 
 At codegen time, the template looks up `http.server.request.duration`,
