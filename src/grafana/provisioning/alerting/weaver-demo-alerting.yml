@@ -1,3 +1,6 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 ---
 apiVersion: 1
 groups:
@@ -57,7 +60,7 @@ groups:
           description: >-
             The metric app.ads.ad_requests (app_ads_ad_requests_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "ad"
@@ -118,7 +121,7 @@ groups:
           description: >-
             The metric app.confirmation.counter (app_confirmation_counter_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "email"
@@ -179,7 +182,7 @@ groups:
           description: >-
             The metric app.currency (app_currency_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "currency"
@@ -240,7 +243,7 @@ groups:
           description: >-
             The metric app.frontend.requests (app_frontend_requests_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "frontend"
@@ -301,7 +304,7 @@ groups:
           description: >-
             The metric app.payment.transactions (app_payment_transactions_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "payment"
@@ -362,7 +365,7 @@ groups:
           description: >-
             The metric app.shipping.items_count (app_shipping_items_count_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "shipping"
@@ -423,7 +426,7 @@ groups:
           description: >-
             The metric app_ai_assistant_counter (app_ai_assistant_counter_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "product_reviews"
@@ -484,7 +487,7 @@ groups:
           description: >-
             The metric app_product_review_counter (app_product_review_counter_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "product_reviews"
@@ -545,7 +548,7 @@ groups:
           description: >-
             The metric app_recommendations_counter (app_recommendations_counter_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
+            has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
         labels:
           service_name: "recommendation"
