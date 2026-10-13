@@ -13,7 +13,7 @@ declare module 'styled-components' {
       backgroundGray: string;
       lightBorderGray: string;
       borderGray: string;
-      textGray: string; 
+      textGray: string;
       textLightGray: string;
       white: string;
     };

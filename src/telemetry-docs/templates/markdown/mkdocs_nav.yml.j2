@@ -19,4 +19,3 @@ nav:
 {%- for service in ctx.services %}
     - {{ service.name | replace("_", " ") | title }}: services/{{ service.name | safe}}.md
 {%- endfor %}
-

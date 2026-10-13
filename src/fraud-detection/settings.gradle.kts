@@ -5,4 +5,3 @@
 
 
 rootProject.name = "fraud-detection"
-

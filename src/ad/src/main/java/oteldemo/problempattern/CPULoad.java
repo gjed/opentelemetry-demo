@@ -23,7 +23,7 @@ public class CPULoad {
     private static final int THREAD_COUNT = 4;
     private boolean running = false;
     private final List<Logarithmizer> runningWorkers = new ArrayList<>();
-    
+
     private static CPULoad instance;
 
     /**
@@ -40,7 +40,7 @@ public class CPULoad {
     /**
      * Starts or stops the CPU load generation based on the input parameter.
      * If enabled, it launches worker threads. If disabled, it stops any running threads.
-     * 
+     *
      * @param enabled Flag to start (true) or stop (false) the CPU load simulation.
      */
     public void execute(Boolean enabled) {
@@ -58,7 +58,7 @@ public class CPULoad {
 
     /**
      * Creates and starts a specified number of Logarithmizer threads to simulate CPU load.
-     * 
+     *
      * @param threadCount The number of threads to be started.
      */
     private void spawnLoadWorkers(int threadCount) {

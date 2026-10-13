@@ -1,8 +1,6 @@
----
-name: Bug Report
-about: Create a report to help us improve
-labels: bug
----
+______________________________________________________________________
+
+## name: Bug Report about: Create a report to help us improve labels: bug
 
 # Bug Report
 
@@ -30,8 +28,8 @@ Could you provide the minimum required steps to resolve the issue you're seeing?
 
 We will close this issue if:
 
-* The steps you provided are complex.
-* If we can not reproduce the behavior you're reporting.
+- The steps you provided are complex.
+- If we can not reproduce the behavior you're reporting.
 
 ## Additional Context
 
