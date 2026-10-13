@@ -10,3 +10,10 @@ default: true
 # opentelemetry-collector's markdownlint config.
 MD004: false
 MD013: false
+
+# MD051: Link fragments - disabled for Weaver DEMO doc where internal links are verified manually
+MD051: false
+
+# MD060: Table column style - disabled due to generated content from Weaver
+# documentation where Unicode-to-ASCII conversions may cause alignment variations.
+MD060: false
