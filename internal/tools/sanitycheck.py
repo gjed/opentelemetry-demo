@@ -18,8 +18,8 @@ def sanitycheck(pattern, allow_utf8 = False, allow_eol = (CRLF, LF), indent = 1)
     for filename in glob.glob(pattern, recursive=True):
         if not os.path.isfile(filename):
             continue
-        # Skip node_modules, .opencode and openspec directories
-        if 'node_modules' in filename or '.opencode' in filename or 'openspec' in filename:
+        # Skip node_modules, .opencode, openspec and the weaver codegen output
+        if 'node_modules' in filename or '.opencode' in filename or 'openspec' in filename or filename.startswith('output/') or '/output/' in filename:
             continue
         with open(filename, 'rb') as file:
             content = file.read()
