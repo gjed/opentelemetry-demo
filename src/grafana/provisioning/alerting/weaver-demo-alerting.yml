@@ -264,7 +264,7 @@ groups:
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "sum(rate(app_payment_transactions_total[5m]))"
+              expr: "sum(rate(demo_payment_transactions_total[5m]))"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -300,9 +300,9 @@ groups:
         for: 2m
         keepFiringFor: 2m
         annotations:
-          summary: "Schema metric app.payment.transactions is being emitted"
+          summary: "Schema metric demo.payment.transactions is being emitted"
           description: >-
-            The metric app.payment.transactions (app_payment_transactions_total) is being
+            The metric demo.payment.transactions (demo_payment_transactions_total) is being
             emitted at a non-zero rate. If this alert goes to NoData, the metric
             has stopped being emitted - likely due to a metric rename or
             instrumentation drift.
