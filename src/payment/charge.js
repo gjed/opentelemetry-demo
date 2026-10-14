@@ -15,6 +15,9 @@ const meter = metrics.getMeter('payment');
 const transactionsCounter = meter.createCounter('demo.payment.transactions', {
   unit: '{transaction}',
 });
+const appTransactionsCounter = meter.createCounter('app.payment.transactions', {
+  unit: '{transaction}',
+});
 
 const LOYALTY_LEVEL = ['platinum', 'gold', 'silver', 'bronze'];
 
@@ -39,6 +42,7 @@ module.exports.charge = async request => {
 
     const numberVariant = await OpenFeature.getClient().getNumberValue("paymentFailure", 0);
     const emitRawPii = await OpenFeature.getClient().getBooleanValue("emitRawPii", false);
+    const telemetrySchemaBreak = await OpenFeature.getClient().getBooleanValue("telemetrySchemaBreak", false);
 
     if (numberVariant > 0) {
       // n% chance to fail with demo.user_context.loyalty_level=gold
@@ -101,7 +105,11 @@ module.exports.charge = async request => {
 
     const { units, nanos, currencyCode } = request.amount;
     logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level }, 'Transaction complete.');
-    transactionsCounter.add(1, { 'demo.payment.currency': currencyCode });
+    if (telemetrySchemaBreak) {
+      appTransactionsCounter.add(1, { currencyCode });
+    } else {
+      transactionsCounter.add(1, { 'demo.payment.currency': currencyCode });
+    }
 
     return { transactionId };
   } catch (err) {
