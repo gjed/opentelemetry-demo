@@ -504,3 +504,8 @@ demo-livecheck:
 .PHONY: demo-build-payment
 demo-build-payment:
 	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) build payment
+
+# Restart payment after flipping telemetrySchemaBreak (simulates a deploy).
+.PHONY: demo-restart-payment
+demo-restart-payment:
+	$(DOCKER_COMPOSE_CMD) $(DOCKER_COMPOSE_ENV) $(WEAVER_COMPOSE) restart payment

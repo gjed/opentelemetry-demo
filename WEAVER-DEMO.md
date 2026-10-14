@@ -40,6 +40,7 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 | `make demo-check`         | Validate the telemetry schema                  |
 | `make demo-livecheck`     | Stop Weaver and print the live-check report    |
 | `make demo-build-payment` | Rebuild the payment service after code changes |
+| `make demo-restart-payment` | Restart payment after flipping the flag (the "deploy") |
 
 ## Demo Walkthrough
 
@@ -55,8 +56,9 @@ telemetry-schema/
 +-- services/     # Service-specific attribute references
 ```
 
-The payment service defines `app.payment.transactions` (a counter) with
-attributes including `app.payment.currency`.
+The payment service defines `demo.payment.transactions` (a counter) with the
+attribute `demo.payment.currency`. The checkout service's `PlaceOrder` span
+carries `demo.order.amount` and `demo.order.items.count`.
 
 ### Step 2 -- See Generated Artifacts
 
@@ -68,20 +70,28 @@ make demo-generate
 
 The generated artifacts live at:
 
-- **Dashboard**: `src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard.json`
-- **Alert rule**: `src/grafana/provisioning/alerting/weaver-demo-alerting.yml`
+- **Dashboards**: `src/grafana/provisioning/dashboards/weaver/`
+  - `weaver-demo-dashboard.json`: **01 - Baseline: schema names (clean demo)**
+  - `weaver-demo-dashboard-02-drift.json`: **02 - After drift: renamed telemetry (flag ON)**
+- **Alert rules**: `src/grafana/provisioning/alerting/weaver-demo-alerting.yml`
 
-These are already provisioned into Grafana. No hand-crafting needed  -  the schema
-wrote them.
+These are already provisioned into Grafana. Dashboard 01 and the alert rules
+query the registry names. Dashboard 02 queries the renamed names a developer
+would ship, so it is empty until the flag flips.
 
 ### Step 3 -- Verify the Happy Path
 
-1. Open Grafana: <http://localhost:8080/grafana>
-1. Navigate to the **"Weaver - Observability by Design"** dashboard folder
-1. Open the **Weaver Demo** dashboard
-1. Confirm the **Payment Transactions Rate** panel shows live data
-1. Check **Alerting**  -  the payment liveness alert shows Normal or Alerting
-   (not NoData)
+1. Open **01 - Baseline**: <http://localhost:8080/grafana/d/weaver-01-baseline>
+1. Confirm the **Payment transactions by currency** panel shows series per
+   currency (`USD`, `CAD`, ...) and every other panel has data
+1. Open **02 - After drift**: <http://localhost:8080/grafana/d/weaver-02-drift>
+   and confirm it is empty (no `app_payment_transactions_total` series)
+1. Check **Alerting** -> **Alert rules** -> folder *Weaver - Observability by
+   Design*: the six liveness rules are **Firing** (they fire while the metric
+   is emitted; that is the healthy state)
+1. Open a checkout trace in Jaeger:
+   <http://localhost:8080/jaeger/ui/search?service=checkout&operation=oteldemo.CheckoutService%2FPlaceOrder>
+   and confirm the span carries `demo.order.amount` and `demo.order.items.count`
 
 ### Step 4 -- Check Weaver Live-Check Conformance
 
@@ -89,37 +99,50 @@ wrote them.
 make demo-logs
 ```
 
-With the default configuration, Weaver reports no violations  -  the live
-telemetry conforms to the schema.
+Weaver receives only the payment and checkout telemetry (see *How It Works*)
+and prints a report per sample. With the flag off, `demo.payment.transactions`
+and the `PlaceOrder` span come out clean; the remaining findings are
+SDK-internal metrics and gRPC-level attributes outside the demo registry.
 
 ### Step 5 -- Break It
 
-Enable the `telemetrySchemaBreak` feature flag:
+This simulates a deploy where a developer "fixed" telemetry names by hand.
 
 1. Open the Feature Flag UI: <http://localhost:8080/feature>
-1. Toggle **telemetrySchemaBreak** to **on**
+1. Toggle **telemetrySchemaBreak** to **on** (flagd reloads within seconds)
+1. Restart payment, as a deploy would: `docker compose ... restart payment`
+   (or `make demo-restart-payment`)
 
-This causes the payment service to:
+With the flag on:
 
-- Rename `demo.payment.transactions` -> `app.payment.transactions`
-- Rename `demo.payment.currency` -> `currencyCode`
+- payment emits `app.payment.transactions` instead of
+  `demo.payment.transactions`, with attribute `currencyCode` instead of
+  `demo.payment.currency`
+- checkout emits `orderAmount` and `orderItemsCount` on the `PlaceOrder` span
+  instead of `demo.order.amount` and `demo.order.items.count`
+
+The restart matters: a process that keeps running still exports its old
+counter at a constant value, so the rate drops to a flat 0 and the alert
+resolves to Normal. After a restart the old series goes stale (5 min) and
+both dashboard and alert go to **No data**.
 
 ### Step 6 -- Watch the Damage
 
-Wait ~5 minutes for the 5-minute rate window to drain, then:
+Immediately:
 
-1. **Dashboard breaks**  -  the "Payment Transactions Rate" panel shows **No data**
-1. **Alert breaks**  -  the payment liveness alert transitions to **NoData** state
-1. **Weaver catches it**  -  check the logs:
+1. **Weaver catches it** -- `make demo-logs` shows, within a minute:
+   - `Metric app.payment.transactions` -> `[violation] Metric does not exist in the registry`
+   - `currencyCode`, `orderAmount`, `orderItemsCount` ->
+     `[violation] Attribute ... does not exist in the registry`
+1. **02 - After drift** fills up: `currencyCode=USD` series appear
+1. **Jaeger** shows `orderAmount` / `orderItemsCount` on new `PlaceOrder` spans
 
-```bash
-make demo-logs
-```
+After ~5 minutes (rate window + staleness):
 
-You see violation findings:
-
-- Non-registry metric `app.payment.tx_count` detected
-- Missing expected attribute `app.payment.currency`
+1. **01 - Baseline**: the payment panel shows **No data**
+1. **Alerting**: *Weaver: Payment transaction counter Liveness* goes
+   **NoData** (2 min pending first). Nothing pages; the other five rules keep
+   firing as if everything were fine.
 
 ### Step 7 -- The Point
 
@@ -146,13 +169,16 @@ firing, and nobody knows why until an incident happens. With Weaver:
 +-----------------+  (metrics + traces)    +----------+
          ^                                       |
          |                                  violations /
-     OTLP from all                           conformance
+     payment + checkout                      conformance
      demo services                           findings
 ```
 
 - The **OTel Collector** receives telemetry from all services as usual
-- The weaver compose overlay adds a fan-out exporter (`otlp_grpc/weaver`) that
-  copies metrics and traces to the Weaver sidecar
+- The weaver compose overlay adds dedicated `traces/weaver` and
+  `metrics/weaver` pipelines that copy only the payment and checkout telemetry
+  to the Weaver sidecar (`filter/weaver`). Weaver live-check is single-threaded
+  and prints a report per sample; fed the whole stack it falls behind, the
+  exporter times out and the drift samples get dropped
 - **Weaver live-check** compares incoming telemetry against the mounted schema
   and reports violations
 - The **feature flag** (`telemetrySchemaBreak`) introduces intentional drift in
