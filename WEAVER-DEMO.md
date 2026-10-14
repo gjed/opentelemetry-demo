@@ -36,7 +36,9 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 | `make demo-restart`       | Restart the demo from scratch (force-recreate) |
 | `make demo-stop`          | Stop the demo (including Weaver)               |
 | `make demo-logs`          | Tail Weaver live-check output                  |
-| `make demo-generate`      | Regenerate dashboard and alert from the schema |
+| `make demo-generate`      | Regenerate dashboard 01 and alerts from the schema |
+| `make demo-generate-drift` | Regenerate dashboard 02 from the schema with the `# FIX(drift)` edits applied |
+| `make demo-provision`     | Copy generated artifacts into the Grafana provisioning dirs |
 | `make demo-check`         | Validate the telemetry schema                  |
 | `make demo-livecheck`     | Stop Weaver and print the live-check report    |
 | `make demo-build-payment` | Rebuild the payment service after code changes |
@@ -62,10 +64,13 @@ carries `demo.order.amount` and `demo.order.items.count`.
 
 ### Step 2 -- See Generated Artifacts
 
-Weaver codegen produced the dashboard and alert rule directly from the schema:
+Weaver codegen (`weaver-templates/registry/grafana/*.j2`) produces the
+dashboards and alert rules directly from the schema:
 
 ```bash
-make demo-generate
+make demo-generate         # 01 + alerts, from telemetry-schema/
+make demo-generate-drift   # 02, from the schema with the FIX(drift) edits applied
+make demo-provision        # copy output/ into src/grafana/provisioning/
 ```
 
 The generated artifacts live at:
@@ -75,20 +80,30 @@ The generated artifacts live at:
   - `weaver-demo-dashboard-02-drift.json`: **02 - After drift: renamed telemetry (flag ON)**
 - **Alert rules**: `src/grafana/provisioning/alerting/weaver-demo-alerting.yml`
 
-These are already provisioned into Grafana. Dashboard 01 and the alert rules
-query the registry names. Dashboard 02 queries the renamed names a developer
-would ship, so it is empty until the flag flips.
+Both dashboards have the same layout: a header, the **Schema alerts** panel
+(the generated rules, so dashboard and alerts are in one place), then one
+panel per metric in the registry, grouped by the metric's attributes.
+
+01 and the alert rules use the registry names. 02 is the same template run
+against the schema *as the developer should have changed it*: the renamed
+names are marked with `# FIX(drift)` comments in `telemetry-schema/`
+(`metrics/payment.yaml`, `attributes/order.yaml`, `services/checkout.yaml`).
+`make demo-generate-drift` applies them on a temp copy; or apply them by hand
+and run `make demo-generate` to show the schema-driven fix live.
+
+The alert rules are tuned for a live demo: services export every 5s
+(`OTEL_METRIC_EXPORT_INTERVAL=5000` in `docker-compose-weaver.yml`), the
+group evaluates every 10s, and each rule fires when
+`absent_over_time(<metric>[15s])` is true.
 
 ### Step 3 -- Verify the Happy Path
 
 1. Open **01 - Baseline**: <http://localhost:8080/grafana/d/weaver-01-baseline>
-1. Confirm the **Payment transactions by currency** panel shows series per
-   currency (`USD`, `CAD`, ...) and every other panel has data
+1. **Schema alerts** panel: six rules, all **Normal**
+1. **Payment transaction counter** panel shows series per currency
+   (`USD`, `CAD`, ...) and every other panel has data
 1. Open **02 - After drift**: <http://localhost:8080/grafana/d/weaver-02-drift>
-   and confirm it is empty (no `app_payment_transactions_total` series)
-1. Check **Alerting** -> **Alert rules** -> folder *Weaver - Observability by
-   Design*: the six liveness rules are **Firing** (they fire while the metric
-   is emitted; that is the healthy state)
+   and confirm the `app.payment.transactions` panel is empty
 1. Open a checkout trace in Jaeger:
    <http://localhost:8080/jaeger/ui/search?service=checkout&operation=oteldemo.CheckoutService%2FPlaceOrder>
    and confirm the span carries `demo.order.amount` and `demo.order.items.count`
@@ -122,27 +137,27 @@ With the flag on:
   instead of `demo.order.amount` and `demo.order.items.count`
 
 The restart matters: a process that keeps running still exports its old
-counter at a constant value, so the rate drops to a flat 0 and the alert
-resolves to Normal. After a restart the old series goes stale (5 min) and
-both dashboard and alert go to **No data**.
+counter at a constant value, so the rate drops to a flat 0 but samples keep
+arriving and nothing goes absent. After a restart the old series stops.
 
 ### Step 6 -- Watch the Damage
 
-Immediately:
+Measured from the flag flip, with the restart issued at +10s:
 
-1. **Weaver catches it** -- `make demo-logs` shows, within a minute:
+1. **+25s**: **01 - Baseline** payment panel goes **No data**
+   (`rate(demo_payment_transactions_total[30s])` has no samples)
+1. **+30s**: the **Schema alerts** panel on both dashboards shows
+   *Weaver: demo.payment.transactions stopped being emitted* **Alerting**
+   (red). The other five rules stay Normal.
+1. **+40s**: **02 - After drift** fills up: `currencyCode=USD` series appear
+1. **Weaver catches it** -- `make demo-logs` shows within a minute:
    - `Metric app.payment.transactions` -> `[violation] Metric does not exist in the registry`
    - `currencyCode`, `orderAmount`, `orderItemsCount` ->
      `[violation] Attribute ... does not exist in the registry`
-1. **02 - After drift** fills up: `currencyCode=USD` series appear
 1. **Jaeger** shows `orderAmount` / `orderItemsCount` on new `PlaceOrder` spans
 
-After ~5 minutes (rate window + staleness):
-
-1. **01 - Baseline**: the payment panel shows **No data**
-1. **Alerting**: *Weaver: Payment transaction counter Liveness* goes
-   **NoData** (2 min pending first). Nothing pages; the other five rules keep
-   firing as if everything were fine.
+To recover: flag **off**, `make demo-restart-payment`; 01 is back and the
+alert is Normal within ~30s.
 
 ### Step 7 -- The Point
 
@@ -346,7 +361,7 @@ but does not publish a machine-readable registry for them. If it did, the same
 | Emitter                                  | Metrics                                                                | Registry exists?                                                       | Weaver would catch drift?                |
 | ---------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------- |
 | **OTel semconv**                         | `http.server.request.duration`, `rpc.server.call.duration`             | [YES] Yes                                                                | [YES] Already working                    |
-| **Application code**                     | `app.payment.transactions`, `app.cart.add_item.latency`                | [YES] Yes: `telemetry-schema/metrics/`                                  | [YES] Already working                    |
+| **Application code**                     | `demo.payment.transactions`, `demo.cart.add_item.latency`              | [YES] Yes: `telemetry-schema/metrics/`                                  | [YES] Already working                    |
 | **OTel SDK runtime metrics**             | `process.runtime.cpython.cpu_time`, `process.runtime.cpython.memory`   | [WARNING] Definitions exist in semconv but not as a clean standalone registry | [YES] Yes: if declared as a dependency   |
 | **OTel SDK internal telemetry**          | `otel_trace_span_processor_spans`                                      | [NO] No published schema                                                | [YES] Yes: if the SDK published one      |
 | **OTel Collector spanmetrics connector** | `traces_span_metrics_duration_milliseconds_*`                          | [NO] Output names are per-config, no registry                           | [YES] Yes: if the connector published one |
@@ -393,7 +408,7 @@ Wait at least 3 minutes after startup for the load generator to produce payment
 transactions. Verify metrics reach Prometheus:
 
 ```bash
-curl -s 'http://localhost:9090/api/v1/query?query=app_payment_transactions_total' | jq .
+curl -s 'http://localhost:9090/api/v1/query?query=demo_payment_transactions_total' | jq .
 ```
 
 ### Collector fails to start with the overlay
