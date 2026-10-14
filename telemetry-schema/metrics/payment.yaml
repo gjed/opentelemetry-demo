@@ -6,7 +6,7 @@ attributes:
   - key: demo.payment.currency
     # FIX(drift): the payment service now emits this attribute as `currencyCode`
     # (telemetrySchemaBreak=on). To make the schema follow the code, replace the
-    # key above with the line below, then `make demo-generate-drift`.
+    # key above with the line below, then `make demo-generate-baseline`.
     # key: currencyCode
     type: string
     brief: Currency code for the transaction
