@@ -8,7 +8,8 @@
 
     alert_min_per_min   counter:   fire when fewer than N events per minute
     alert_min_distinct  counter:   fire when the metric's first required
-                                   attribute has fewer than N distinct values
+                                   attribute had fewer than N distinct values
+                                   with traffic in the last 5 minutes
     alert_max_p95_ms    histogram: fire when the p95 is above N milliseconds
 
   Absent series count as zero (`or on() vector(0)`): a counter nobody emits
@@ -128,10 +129,10 @@ groups:
 {{ rule("w" ~ num ~ "-" ~ short ~ "-mix",
         brief ~ ": fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ what,
         panel_id,
-        "count(sum by (" ~ label ~ ") (rate(" ~ base ~ "_total[1m]))) or on() vector(0)",
+        "count(sum by (" ~ label ~ ") (rate(" ~ base ~ "_total{" ~ label ~ "!=\\\"\\\"}[5m])) > 0) or on() vector(0)",
         "lt", ann.alert_min_distinct, "warning", service_name,
         brief ~ " seen for fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ what,
-        "In the last minute " ~ metric.metric_name ~ " was recorded for fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ attr.name ~ " (" ~ service_name ~ " service). Part of the traffic is missing or is not labelled.") }}
+        "In the last 5 minutes " ~ metric.metric_name ~ " was recorded for fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ attr.name ~ " (" ~ service_name ~ " service). Part of the traffic is missing or is not labelled.") }}
 {%- endif %}
 {%- endif %}
 {%- if metric.instrument == "histogram" and ann.alert_max_p95_ms is defined %}
