@@ -101,8 +101,8 @@ Enable the `telemetrySchemaBreak` feature flag:
 
 This causes the payment service to:
 
-- Rename `app.payment.transactions` -> `app.payment.tx_count`
-- Drop the `app.payment.currency` attribute
+- Rename `demo.payment.transactions` -> `app.payment.transactions`
+- Rename `demo.payment.currency` -> `currencyCode`
 
 ### Step 6 -- Watch the Damage
 
@@ -349,7 +349,7 @@ emitter in the pipeline as registries become available.
 | `src/grafana/provisioning/dashboards/weaver.yaml`                       | Grafana dashboard provisioning config                                    |
 | `src/flagd/demo.flagd.json`                                             | Feature flags: includes `telemetrySchemaBreak`                           |
 | `src/payment/charge.js`                                                 | Payment service: reads the flag, conditionally breaks telemetry          |
-| `.env`                                                                  | Pins `WEAVER_IMAGE=otel/weaver:v0.23.0`                                  |
+| `.env`                                                                  | Pins `WEAVER_IMAGE=otel/weaver:v0.27.0`                                  |
 
 ## Troubleshooting
 
