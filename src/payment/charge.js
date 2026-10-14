@@ -15,9 +15,6 @@ const meter = metrics.getMeter('payment');
 const transactionsCounter = meter.createCounter('demo.payment.transactions', {
   unit: '{transaction}',
 });
-const appTransactionsCounter = meter.createCounter('app.payment.transactions', {
-  unit: '{transaction}',
-});
 
 const LOYALTY_LEVEL = ['platinum', 'gold', 'silver', 'bronze'];
 
@@ -48,6 +45,9 @@ module.exports.charge = async request => {
       // n% chance to fail with demo.user_context.loyalty_level=gold
       if (Math.random() < numberVariant) {
         span.setAttributes({'demo.user_context.loyalty_level': 'gold' });
+
+        const errorKey = telemetrySchemaBreak ? 'error.type' : 'paymentError';
+        transactionsCounter.add(1, { 'demo.payment.currency': request.amount.currencyCode, [errorKey]: 'InvalidToken' });
 
         throw new Error('Payment request failed. Invalid token. demo.user_context.loyalty_level=gold');
       }
@@ -105,11 +105,7 @@ module.exports.charge = async request => {
 
     const { units, nanos, currencyCode } = request.amount;
     logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level }, 'Transaction complete.');
-    if (telemetrySchemaBreak) {
-      appTransactionsCounter.add(1, { currencyCode });
-    } else {
-      transactionsCounter.add(1, { 'demo.payment.currency': currencyCode });
-    }
+    transactionsCounter.add(1, { 'demo.payment.currency': currencyCode });
 
     return { transactionId };
   } catch (err) {
