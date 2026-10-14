@@ -435,31 +435,31 @@ WEAVER?=docker run --rm -u $(shell id -u):$(shell id -g) -v $(CURDIR):/work -w /
 # Generate Grafana dashboards and alert rules from the telemetry schema.
 .PHONY: demo-generate
 demo-generate:
-	$(WEAVER) registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies grafana
+	$(WEAVER) registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies -D variant=schema grafana
 
 # Generate dashboard 02 ("after drift") from the schema with the FIX(drift)
 # edits applied: the names the developer actually shipped. Works on a temp copy
 # of the registry so telemetry-schema/ keeps the correct names. To do it by
 # hand instead, apply the `# FIX(drift)` comments in telemetry-schema/ and run
 # `make demo-generate`.
-.PHONY: demo-generate-drift
-demo-generate-drift:
-	rm -rf output/drift-registry && cp -r telemetry-schema output/drift-registry
+.PHONY: demo-generate-baseline
+demo-generate-baseline:
+	rm -rf output/baseline-registry && cp -r telemetry-schema output/baseline-registry
 	sed -i -E 's/^(\s*(- )?(key|name|ref)): demo\.payment\.transactions$$/\1: app.payment.transactions/; s/^(\s*(- )?(key|ref)): demo\.payment\.currency$$/\1: currencyCode/; s/^(\s*(- )?(key|ref)): demo\.order\.amount$$/\1: orderAmount/; s/^(\s*(- )?(key|ref)): demo\.order\.items\.count$$/\1: orderItemsCount/' \
-		output/drift-registry/metrics/payment.yaml output/drift-registry/attributes/order.yaml output/drift-registry/services/checkout.yaml
-	$(WEAVER) registry generate --registry output/drift-registry/ --templates weaver-templates --skip-policies -D variant=drift grafana output/drift
+		output/baseline-registry/metrics/payment.yaml output/baseline-registry/attributes/order.yaml output/baseline-registry/services/checkout.yaml
+	$(WEAVER) registry generate --registry output/baseline-registry/ --templates weaver-templates --skip-policies -D variant=baseline grafana output/baseline
 
 # Copy generated artifacts from output/ to the Grafana provisioning directories.
 # Uses cp --update to avoid clobbering unchanged files; never deletes existing
 # non-generated files (alerts, dashboards placed by other means are safe).
 .PHONY: demo-provision
 demo-provision:
-	cp -v --update output/weaver-demo-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard.json
-	cp -v --update output/weaver-demo-alerting.yml src/grafana/provisioning/alerting/weaver-demo-alerting.yml
+	cp -v --update output/weaver-demo-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard-02-schema.json
+	cp -v --update output/weaver-demo-alerting.yml src/grafana/provisioning/alerting/weaver-demo-alerting-02-schema.yml
 	cp -v --update output/weaver-apm-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-apm-dashboard.json
 	cp -v --update output/weaver-comparison-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-comparison-dashboard.json
-	cp -v --update output/weaver-comparison-alerting.yml src/grafana/provisioning/alerting/weaver-comparison-alerting.yml
-	[ -f output/drift/weaver-demo-dashboard.json ] && cp -v --update output/drift/weaver-demo-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard-02-drift.json || true
+	[ -f output/baseline/weaver-demo-dashboard.json ] && cp -v --update output/baseline/weaver-demo-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard-01-baseline.json || true
+	[ -f output/baseline/weaver-demo-alerting.yml ] && cp -v --update output/baseline/weaver-demo-alerting.yml src/grafana/provisioning/alerting/weaver-demo-alerting-01-baseline.yml || true
 	@echo ""
 	@echo "Generated artifacts copied to Grafana provisioning directories."
 
@@ -467,15 +467,18 @@ demo-provision:
 .PHONY: demo-clean
 demo-clean:
 	rm -rf output/
-	rm -f src/grafana/provisioning/dashboards/weaver/weaver-apm-dashboard.json
-	rm -f src/grafana/provisioning/dashboards/weaver/weaver-comparison-dashboard.json
-	rm -f src/grafana/provisioning/alerting/weaver-comparison-alerting.yml
-	@echo "Generated artifacts removed."
+	@echo "Generated artifacts removed (output/). Provisioned copies in src/grafana/provisioning/ are kept."
 
 # Validate the telemetry schema is well-formed.
 .PHONY: demo-check
 demo-check:
-	weaver registry check --registry telemetry-schema/
+	$(WEAVER) registry check --registry telemetry-schema/
+
+# Registry statistics: groups, attributes, metrics (custom + semconv dependency).
+.PHONY: demo-stats
+demo-stats:
+	$(WEAVER) registry stats --registry telemetry-schema/
+
 
 # Start the demo with the Weaver live-check sidecar (idempotent — no-op if already running).
 .PHONY: demo-start
@@ -513,12 +516,13 @@ demo-stop:
 demo-logs:
 	$(DOCKER_COMPOSE_CMD) $(WEAVER_COMPOSE) logs -f weaver
 
-# Send /stop to the Weaver sidecar and follow the logs until it exits.
-# NOTE: This stops the Weaver container — run 'make demo-start' to restart it.
+# Live-check findings of the last 60s: one line per (telemetry item, violation),
+# with how many samples showed it. The full per-sample report is 'make demo-logs'.
 .PHONY: demo-livecheck
 demo-livecheck:
-	@curl -sf -X POST http://localhost:4320/stop || { echo "ERROR: Could not reach Weaver admin port (is the demo running?). Try 'make demo-start' first."; exit 1; }
-	@$(DOCKER_CMD) logs --since 2m -f weaver
+	@$(DOCKER_CMD) logs --since 60s weaver 2>&1 | sed -E 's/\x1b\[[0-9;]*m//g' \
+		| awk '/^(Metric|Span) /{h=$$1" "$$2} /\[violation\]/{sub(/^ *- \[violation\] /,""); print h": "$$0}' \
+		| sort | uniq -c | sort -k2,2 -k1,1rn | sed -E 's/^ *([0-9]+) /\1x  /'
 
 # Build the services this fork changes (telemetrySchemaBreak flag in payment
 # and checkout, metric name fix in currency). `make demo-start` pulls upstream
