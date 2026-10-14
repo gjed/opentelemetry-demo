@@ -11,6 +11,7 @@ metrics:
     requirement_level: recommended
     annotations:
       service: currency
+      alert_min_per_min: 10
     attributes:
       - ref: demo.exchange.to
         requirement_level: required

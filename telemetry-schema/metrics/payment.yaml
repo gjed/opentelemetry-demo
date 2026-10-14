@@ -27,6 +27,9 @@ metrics:
     requirement_level: recommended
     annotations:
       service: payment
+      # Operational thresholds, consumed by weaver-templates/registry/grafana/alerting.yml.j2
+      alert_min_per_min: 1
+      alert_min_distinct: 2
     attributes:
       - ref: demo.payment.currency
         # FIX(drift): ref: currencyCode

@@ -3,20 +3,24 @@
   SPDX-License-Identifier: Apache-2.0
 
   Grafana alerting rules generated from the OpenTelemetry Demo telemetry schema.
-  Per counter metric:
-    - a liveness rule: fires when the metric stops being emitted
-    - one rule per required attribute: fires when the metric is emitted
-      without that attribute (renamed or dropped label)
+  The rules are the operational alerts a team would write by hand; the
+  thresholds come from the metric annotations in the registry:
+
+    alert_min_per_min   counter:   fire when fewer than N events per minute
+    alert_min_distinct  counter:   fire when the metric's first required
+                                   attribute has fewer than N distinct values
+    alert_max_p95_ms    histogram: fire when the p95 is above N milliseconds
+
+  Absent series count as zero (`or on() vector(0)`): a counter nobody emits
+  any more fires the "below N per minute" rule exactly like a real outage.
+
   Every rule is linked to the panel of its metric on the dashboard generated
-  from the same registry (__dashboardUid__ / __panelId__), so the panel shows
-  the alert state and the dashboard's alert list shows only these rules.
+  from the same registry (__dashboardUid__ / __panelId__). Rule titles use the
+  metric brief, not the metric name, so the baseline and the schema variants
+  show the same titles while querying different series.
 
-  Tuned for a live demo: services export every 5s, the group evaluates every
-  10s, the rule looks back 15s and has no pending period, so a renamed metric
-  (telemetry drift) turns the alert red within ~15-25s of the deploy.
-
-  Rule titles use the metric brief, not the metric name, so the baseline and
-  the schema variants show the same titles while querying different series.
+  Tuned for a live demo: services export every 5s and the group evaluates
+  every 10s with no pending period.
 
   Parameters (weaver registry generate -D key=value): same as dashboard.json.j2.
     variant:  "schema" (default) or "baseline". Selects the dashboard the
@@ -33,6 +37,58 @@
 {#- Panel ids follow the dashboard template: 1 header, 2 alert list, then one
     per included metric in registry order. -#}
 {%- set ns = namespace(panel_id=3) -%}
+{%- macro rule(uid, title, panel_id, expr, op, threshold, severity, service_name, summary, description) %}
+
+      - uid: {{ uid }}
+        title: "{{ title }}"
+        condition: threshold
+        data:
+          - refId: value
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "{{ expr }}"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: value
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - {{ threshold }}
+                    type: {{ op }}
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: value
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        annotations:
+          __dashboardUid__: {{ dash_uid }}
+          __panelId__: "{{ panel_id }}"
+          summary: "{{ summary }}"
+          description: "{{ description }}"
+        labels:
+          service_name: "{{ service_name }}"
+          service_namespace: opentelemetry-demo
+          severity: {{ severity }}
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+{%- endmacro %}
 ---
 apiVersion: 1
 groups:
@@ -41,139 +97,54 @@ groups:
     folder: {{ folder }}
     interval: 10s
     rules:
-{% for svc in services %}
-{% for root_ns in ctx %}
-{% for metric in root_ns.metrics %}
-{% if metric.annotations is defined and metric.annotations.service is defined and metric.annotations.service == svc %}
-{% set panel_id = ns.panel_id %}
-{% set ns.panel_id = ns.panel_id + 1 %}
-{% if metric.instrument == "counter" or metric.instrument == "histogram" %}
-{% set base = metric.metric_name | replace(".", "_") %}
-{% if metric.unit == "s" %}{% set base = base + "_seconds" %}{% elif metric.unit == "By" %}{% set base = base + "_bytes" %}{% endif %}
-{% if metric.instrument == "counter" %}{% set prom_name = base + "_total" %}{% else %}{% set prom_name = base + "_count" %}{% endif %}
-{% set label_title = metric.brief | default(metric.metric_name, true) %}
-{# uid: metric name without its first namespace segment (demo./app.) #}
-{% set short = metric.metric_name | regex_replace("^[^.]+\\.", "") | replace(".", "-") | replace("_", "-") %}
-{% set service_name = "" %}
-{% if metric.annotations is defined and metric.annotations.service is defined %}
-{% set service_name = metric.annotations.service %}
-{% endif %}
-      - uid: w{{ num }}-{{ short }}
-        title: "{{ label_title }}: stopped being emitted"
-        condition: threshold
-        data:
-          - refId: absent
-            relativeTimeRange:
-              from: 60
-              to: 0
-            datasourceUid: webstore-metrics
-            model:
-              editorMode: code
-              expr: "absent_over_time({{ prom_name }}[15s])"
-              instant: true
-              intervalMs: 1000
-              maxDataPoints: 43200
-              range: false
-              refId: absent
-          - refId: threshold
-            datasourceUid: __expr__
-            model:
-              conditions:
-                - evaluator:
-                    params:
-                      - 0
-                    type: gt
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: absent
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: threshold
-              type: threshold
-        noDataState: OK
-        execErrState: Error
-        for: 0s
-        annotations:
-          __dashboardUid__: {{ dash_uid }}
-          __panelId__: "{{ panel_id }}"
-          summary: "Schema metric {{ metric.metric_name }} is no longer emitted"
-          description: >-
-            No sample of {{ metric.metric_name }} ({{ prom_name }}) was received
-            in the last 15s. The metric was renamed or dropped: instrumentation
-            drifted from the telemetry schema.
-        labels:
-{% if service_name %}
-          service_name: "{{ service_name }}"
-{% endif %}
-          service_namespace: opentelemetry-demo
-          severity: critical
-          source: weaver-codegen
-        isPaused: false
-        notification_settings:
-          receiver: grafana-default-email
-{% for attr in metric.attributes | default([]) %}
-{% if attr.requirement_level is defined and attr.requirement_level == "required" %}
-{% set label = attr.name | replace(".", "_") %}
-{% set attr_short = (attr.name | split(".") | last) | replace("_", "-") %}
-      - uid: w{{ num }}-{{ short }}-{{ attr_short }}
-        title: "{{ label_title }}: missing required attribute ({{ attr.brief | default(attr.name, true) | lower }})"
-        condition: threshold
-        data:
-          - refId: absent
-            relativeTimeRange:
-              from: 60
-              to: 0
-            datasourceUid: webstore-metrics
-            model:
-              editorMode: code
-              expr: "absent_over_time({{ prom_name }}{{ '{' }}{{ label }}=~\".+\"{{ '}' }}[15s])"
-              instant: true
-              intervalMs: 1000
-              maxDataPoints: 43200
-              range: false
-              refId: absent
-          - refId: threshold
-            datasourceUid: __expr__
-            model:
-              conditions:
-                - evaluator:
-                    params:
-                      - 0
-                    type: gt
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: absent
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: threshold
-              type: threshold
-        noDataState: OK
-        execErrState: Error
-        for: 0s
-        annotations:
-          __dashboardUid__: {{ dash_uid }}
-          __panelId__: "{{ panel_id }}"
-          summary: "Required attribute {{ attr.name }} missing on {{ metric.metric_name }}"
-          description: >-
-            No sample of {{ metric.metric_name }} carried the required attribute
-            {{ attr.name }} ({{ label }}) in the last 15s. The attribute was
-            renamed or dropped: instrumentation drifted from the telemetry schema.
-        labels:
-{% if service_name %}
-          service_name: "{{ service_name }}"
-{% endif %}
-          service_namespace: opentelemetry-demo
-          severity: warning
-          source: weaver-codegen
-        isPaused: false
-        notification_settings:
-          receiver: grafana-default-email
-{% endif %}
-{% endfor %}
-{% endif %}
-{% endif %}
-{% endfor %}
-{% endfor %}
-{% endfor %}
+{%- for svc in services %}
+{%- for root_ns in ctx %}
+{%- for metric in root_ns.metrics %}
+{%- if metric.annotations is defined and metric.annotations.service is defined and metric.annotations.service == svc %}
+{%- set panel_id = ns.panel_id %}
+{%- set ns.panel_id = ns.panel_id + 1 %}
+{%- set ann = metric.annotations %}
+{%- set base = metric.metric_name | replace(".", "_") %}
+{%- if metric.unit == "s" %}{%- set base = base + "_seconds" %}{%- elif metric.unit == "By" %}{%- set base = base + "_bytes" %}{%- endif %}
+{%- set brief = metric.brief | default(metric.metric_name, true) %}
+{#- uid: metric name without its first namespace segment (demo./app.) #}
+{%- set short = metric.metric_name | regex_replace("^[^.]+\\.", "") | replace(".", "-") | replace("_", "-") %}
+{%- set service_name = ann.service %}
+{%- if metric.instrument == "counter" and ann.alert_min_per_min is defined %}
+{{ rule("w" ~ num ~ "-" ~ short ~ "-rate",
+        brief ~ ": under " ~ ann.alert_min_per_min ~ " per minute",
+        panel_id,
+        "sum(rate(" ~ base ~ "_total[1m])) * 60 or on() vector(0)",
+        "lt", ann.alert_min_per_min, "critical", service_name,
+        brief ~ " dropped under " ~ ann.alert_min_per_min ~ " per minute",
+        "Fewer than " ~ ann.alert_min_per_min ~ " " ~ metric.metric_name ~ " events per minute in the last minute (" ~ service_name ~ " service). Check the " ~ service_name ~ " service and the services calling it.") }}
+{%- endif %}
+{%- if metric.instrument == "counter" and ann.alert_min_distinct is defined %}
+{%- set required = metric.attributes | default([]) | selectattr("requirement_level", "equalto", "required") | list %}
+{%- if required | length > 0 %}
+{%- set attr = required[0] %}
+{%- set label = attr.name | replace(".", "_") %}
+{%- set what = attr.brief | default(attr.name, true) | lower %}
+{{ rule("w" ~ num ~ "-" ~ short ~ "-mix",
+        brief ~ ": fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ what,
+        panel_id,
+        "count(sum by (" ~ label ~ ") (rate(" ~ base ~ "_total[1m]))) or on() vector(0)",
+        "lt", ann.alert_min_distinct, "warning", service_name,
+        brief ~ " seen for fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ what,
+        "In the last minute " ~ metric.metric_name ~ " was recorded for fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ attr.name ~ " (" ~ service_name ~ " service). Part of the traffic is missing or is not labelled.") }}
+{%- endif %}
+{%- endif %}
+{%- if metric.instrument == "histogram" and ann.alert_max_p95_ms is defined %}
+{{ rule("w" ~ num ~ "-" ~ short ~ "-p95",
+        brief ~ ": p95 over " ~ ann.alert_max_p95_ms ~ " ms",
+        panel_id,
+        "histogram_quantile(0.95, sum by (le) (rate(" ~ base ~ "_bucket[1m]))) * 1000 or on() vector(0)",
+        "gt", ann.alert_max_p95_ms, "warning", service_name,
+        brief ~ " p95 above " ~ ann.alert_max_p95_ms ~ " ms",
+        "The 95th percentile of " ~ metric.metric_name ~ " was above " ~ ann.alert_max_p95_ms ~ " ms over the last minute (" ~ service_name ~ " service).") }}
+{%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- endfor %}
+{%- endfor %}
+{{ "\n" }}
