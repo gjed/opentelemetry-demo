@@ -406,7 +406,7 @@ trips all absence alerts; they clear within 30s. Verify samples reach
 Prometheus:
 
 ```bash
-curl -s 'http://localhost:9090/api/v1/query?query=app_payment_transactions_total' | jq .
+curl -s 'http://localhost:9090/api/v1/query?query=demo_payment_transactions_total' | jq .
 ```
 
 ### Collector fails to start with the overlay
