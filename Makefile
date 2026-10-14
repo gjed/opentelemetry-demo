@@ -437,16 +437,15 @@ WEAVER?=docker run --rm -u $(shell id -u):$(shell id -g) -v $(CURDIR):/work -w /
 demo-generate:
 	$(WEAVER) registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies -D variant=schema grafana
 
-# Generate dashboard 02 ("after drift") from the schema with the FIX(drift)
-# edits applied: the names the developer actually shipped. Works on a temp copy
-# of the registry so telemetry-schema/ keeps the correct names. To do it by
-# hand instead, apply the `# FIX(drift)` comments in telemetry-schema/ and run
-# `make demo-generate`.
+# Generate dashboard 01 ("the team wrote it") from a copy of the schema in which
+# the error attribute carries its legacy name `paymentError` (the LEGACY(baseline)
+# block in metrics/payment.yaml). Works on a temp copy so telemetry-schema/ keeps
+# error.type. To do it by hand instead, apply the same three changes in the copy.
 .PHONY: demo-generate-baseline
 demo-generate-baseline:
 	rm -rf output/baseline-registry && cp -r telemetry-schema output/baseline-registry
-	sed -i -E 's/^(\s*(- )?(key|name|ref)): demo\.payment\.transactions$$/\1: app.payment.transactions/; s/^(\s*(- )?(key|ref)): demo\.payment\.currency$$/\1: currencyCode/; s/^(\s*(- )?(key|ref)): demo\.order\.amount$$/\1: orderAmount/; s/^(\s*(- )?(key|ref)): demo\.order\.items\.count$$/\1: orderItemsCount/' \
-		output/baseline-registry/metrics/payment.yaml output/baseline-registry/attributes/order.yaml output/baseline-registry/services/checkout.yaml
+	sed -i -E '/^  # - key: paymentError$$/,/^  #   stability: stable$$/ s/^  # /  /; s/^(\s*- ref: )error\.type$$/\1paymentError/; s/^(\s*error_attribute: )error\.type$$/\1paymentError/' \
+		output/baseline-registry/metrics/payment.yaml
 	$(WEAVER) registry generate --registry output/baseline-registry/ --templates weaver-templates --skip-policies -D variant=baseline grafana output/baseline
 
 # Copy generated artifacts from output/ to the Grafana provisioning directories.
