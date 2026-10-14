@@ -2,7 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # OTel Collector extras config for Weaver live-check.
-# Adds a fan-out exporter that sends metrics and traces to the Weaver sidecar.
+# Adds dedicated traces/metrics pipelines that send only the demo services'
+# telemetry (payment, checkout) to the Weaver sidecar. Weaver live-check is
+# single-threaded and prints a report per sample: feeding it the whole stack
+# makes the exporter time out and drop data, which hides the drift it is
+# meant to catch. Logs are not sent: the demo registry has no log signals.
 
 exporters:
   otlp_grpc/weaver:
@@ -10,14 +14,27 @@ exporters:
     tls:
       insecure: true
     compression: none
+    timeout: 30s
     sending_queue:
       batch:
 
+processors:
+  filter/weaver:
+    error_mode: ignore
+    traces:
+      span:
+        - 'resource.attributes["service.name"] != "payment" and resource.attributes["service.name"] != "checkout"'
+    metrics:
+      metric:
+        - 'resource.attributes["service.name"] != "payment" and resource.attributes["service.name"] != "checkout"'
+
 service:
   pipelines:
-    traces:
-      exporters: [otlp_grpc/jaeger, debug, span_metrics, otlp_grpc/weaver]
-    metrics:
-      exporters: [otlp_http/prometheus, debug, otlp_grpc/weaver]
-    logs:
-      exporters: [opensearch, debug, otlp_grpc/weaver]
+    traces/weaver:
+      receivers: [otlp]
+      processors: [resource_detection, memory_limiter, filter/weaver]
+      exporters: [otlp_grpc/weaver]
+    metrics/weaver:
+      receivers: [otlp]
+      processors: [resource_detection, memory_limiter, filter/weaver]
+      exporters: [otlp_grpc/weaver]
