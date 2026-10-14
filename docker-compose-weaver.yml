@@ -50,3 +50,30 @@ services:
   otel-collector:
     volumes:
       - ./src/otel-collector/otelcol-config-weaver.yml:/etc/otelcol-config-extras.yml
+
+  # Services whose metrics appear on the generated dashboards/alerts export
+  # every 5s (default 60s) so a renamed metric turns the alert red in seconds.
+  ad:
+    environment:
+      - OTEL_METRIC_EXPORT_INTERVAL=5000
+  cart:
+    environment:
+      - OTEL_METRIC_EXPORT_INTERVAL=5000
+  checkout:
+    environment:
+      - OTEL_METRIC_EXPORT_INTERVAL=5000
+  currency:
+    environment:
+      - OTEL_METRIC_EXPORT_INTERVAL=5000
+  email:
+    environment:
+      - OTEL_METRIC_EXPORT_INTERVAL=5000
+  payment:
+    environment:
+      - OTEL_METRIC_EXPORT_INTERVAL=5000
+  recommendation:
+    environment:
+      - OTEL_METRIC_EXPORT_INTERVAL=5000
+  shipping:
+    environment:
+      - OTEL_METRIC_EXPORT_INTERVAL=5000
