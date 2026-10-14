@@ -28,7 +28,7 @@ metrics:
       alert_min_per_min: 1
       # Attribute that marks a failed transaction, and the error-rate threshold in percent
       error_attribute: error.type
-      alert_max_error_pct: 5
+      alert_max_error_pct: 2
     attributes:
       - ref: demo.payment.currency
         requirement_level: required

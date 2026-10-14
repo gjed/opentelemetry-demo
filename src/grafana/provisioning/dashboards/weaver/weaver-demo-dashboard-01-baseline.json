@@ -102,7 +102,7 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "red", "value": 5 }            ]
+              { "color": "red", "value": 2 }            ]
           },
           "unit": "percent"
         },

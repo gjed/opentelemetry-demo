@@ -76,7 +76,7 @@ groups:
         notification_settings:
           receiver: grafana-default-email
       - uid: w02-payment-transactions-errors
-        title: "Payment transaction counter: error rate over 5%"
+        title: "Payment transaction counter: error rate over 2%"
         condition: threshold
         data:
           - refId: value
@@ -98,7 +98,7 @@ groups:
               conditions:
                 - evaluator:
                     params:
-                      - 5
+                      - 2
                     type: gt
               datasource:
                 type: __expr__
@@ -114,8 +114,8 @@ groups:
         annotations:
           __dashboardUid__: weaver-02-schema
           __panelId__: "4"
-          summary: "Payment transaction counter error rate above 5%"
-          description: "More than 5% of demo.payment.transactions samples carried error.type over the last minute (payment service)."
+          summary: "Payment transaction counter error rate above 2%"
+          description: "More than 2% of demo.payment.transactions samples carried error.type over the last minute (payment service)."
         labels:
           service_name: "payment"
           service_namespace: opentelemetry-demo

@@ -98,7 +98,7 @@ thresholds taken from the metric annotations in the registry
 (`alert_min_per_min`, `alert_max_error_pct`, `alert_max_p95_ms`):
 
 - *Payment transaction counter: under 1 per minute*
-- *Payment transaction counter: error rate over 5%*
+- *Payment transaction counter: error rate over 2%*
 - *Cart add item operation latency: p95 over 500 ms*
 - *Cart retrieval operation latency: p95 over 500 ms*
 - *Currency conversion counter: under 10 per minute*
@@ -127,7 +127,7 @@ Open **02 - Generated from the telemetry schema**:
 
 Same panel titles, same alert titles, same thresholds. The payment rate panel is
 identical, but the error rate panel queries `error.type` as declared in the
-schema, and it reads **~10%**. *Payment transaction counter: error rate over 5%*
+schema, and it reads **~10%**. *Payment transaction counter: error rate over 2%*
 is red and linked to that panel. Cart and currency are identical to 01.
 
 ### Act 5 -- Live-check
