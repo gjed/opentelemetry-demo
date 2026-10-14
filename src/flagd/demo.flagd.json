@@ -87,7 +87,7 @@
       }
     },
     "telemetrySchemaBreak": {
-      "defaultVariant": "off",
+      "defaultVariant": "on",
       "description": "Drift scenario for the Weaver demo: payment renames its transactions metric to app.payment.transactions and currency attribute to currencyCode",
       "metadata": {
         "schedulable": false
