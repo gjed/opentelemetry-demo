@@ -391,13 +391,25 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	shippingCostFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", prep.shippingCostLocalized.GetUnits(), prep.shippingCostLocalized.GetNanos()/10000000), 64)
 	totalPriceFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", total.GetUnits(), total.GetNanos()/10000000), 64)
 
-	span.SetAttributes(
-		attribute.String("demo.order.id", orderID.String()),
-		attribute.Float64("demo.shipping.amount", shippingCostFloat),
-		attribute.Float64("demo.order.amount", totalPriceFloat),
-		attribute.Int("demo.order.items.count", len(prep.orderItems)),
-		shippingTrackingAttribute,
-	)
+	var orderAttrs []attribute.KeyValue
+	if flags.TelemetrySchemaBreak.Value(ctx, openfeature.EvaluationContext{}) {
+		orderAttrs = []attribute.KeyValue{
+			attribute.String("demo.order.id", orderID.String()),
+			attribute.Float64("demo.shipping.amount", shippingCostFloat),
+			attribute.Float64("orderAmount", totalPriceFloat),
+			attribute.Int("orderItemsCount", len(prep.orderItems)),
+			shippingTrackingAttribute,
+		}
+	} else {
+		orderAttrs = []attribute.KeyValue{
+			attribute.String("demo.order.id", orderID.String()),
+			attribute.Float64("demo.shipping.amount", shippingCostFloat),
+			attribute.Float64("demo.order.amount", totalPriceFloat),
+			attribute.Int("demo.order.items.count", len(prep.orderItems)),
+			shippingTrackingAttribute,
+		}
+	}
+	span.SetAttributes(orderAttrs...)
 	logger.LogAttrs(
 		ctx,
 		slog.LevelInfo, "order placed",

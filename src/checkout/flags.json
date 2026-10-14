@@ -15,6 +15,11 @@
       "defaultValue": false,
       "description": "simulates payment unreachable issue",
       "flagType": "boolean"
+    },
+    "telemetrySchemaBreak": {
+      "defaultValue": false,
+      "description": "simulates attribute name drift on checkout order span",
+      "flagType": "boolean"
     }
   }
 }

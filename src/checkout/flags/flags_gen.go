@@ -91,3 +91,25 @@ var PaymentUnreachable = struct {
 		return client.BooleanValueDetails(ctx, "paymentUnreachable", false, evalCtx)
 	},
 }
+
+// TelemetrySchemaBreak returns the value of the "telemetrySchemaBreak" feature flag.
+// simulates attribute name drift on checkout order span
+//
+// The flag is a type of boolean and defaults to false.
+var TelemetrySchemaBreak = struct {
+	fmt.Stringer
+	// Value returns the value of the [TelemetrySchemaBreak] flag.
+	Value evaluationValue[bool]
+
+	// ValueWithDetails returns the evaluation details of the [TelemetrySchemaBreak] flag
+	// and the evaluation error, if any.
+	ValueWithDetails evaluationDetails[bool]
+}{
+	Stringer: stringer("telemetrySchemaBreak"),
+	Value: func(ctx context.Context, evalCtx openfeature.EvaluationContext) bool {
+		return client.Boolean(ctx, "telemetrySchemaBreak", false, evalCtx)
+	},
+	ValueWithDetails: func(ctx context.Context, evalCtx openfeature.EvaluationContext) (openfeature.GenericEvaluationDetails[bool], error) {
+		return client.BooleanValueDetails(ctx, "telemetrySchemaBreak", false, evalCtx)
+	},
+}
