@@ -4,22 +4,19 @@
 file_format: definition/2
 attributes:
   - key: demo.payment.currency
-    # FIX(drift): the payment service now emits this attribute as `currencyCode`
-    # (telemetrySchemaBreak=on). To make the schema follow the code, replace the
-    # key above with the line below, then `make demo-generate-baseline`.
-    # key: currencyCode
     type: string
     brief: Currency code for the transaction
     stability: stable
     examples: ["USD", "EUR", "GBP"]
     note: The currency in which the payment transaction was processed
+  # LEGACY(baseline): old name of error.type, only used by demo-generate-baseline
+  # - key: paymentError
+  #   type: string
+  #   brief: Payment error class (legacy name of error.type)
+  #   stability: stable
 
 metrics:
   - name: demo.payment.transactions
-    # FIX(drift): the payment service now emits this metric as
-    # `app.payment.transactions` (telemetrySchemaBreak=on). Replace the name
-    # above with the line below to regenerate dashboard 02 and its alert.
-    # name: app.payment.transactions
     brief: Payment transaction counter
     instrument: counter
     unit: "{transaction}"
@@ -29,8 +26,15 @@ metrics:
       service: payment
       # Operational thresholds, consumed by weaver-templates/registry/grafana/alerting.yml.j2
       alert_min_per_min: 1
-      alert_min_distinct: 2
+      # Attribute that marks a failed transaction, and the error-rate threshold in percent
+      error_attribute: error.type
+      alert_max_error_pct: 2
     attributes:
       - ref: demo.payment.currency
-        # FIX(drift): ref: currencyCode
         requirement_level: required
+      - ref: error.type
+        requirement_level:
+          conditionally_required: If the transaction failed.
+      # LEGACY(baseline): the dashboard the team wrote reads the error label by its
+      # old name. `make demo-generate-baseline` swaps the ref above for this one.
+      #   - ref: paymentError

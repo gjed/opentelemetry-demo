@@ -88,7 +88,7 @@
     },
     "telemetrySchemaBreak": {
       "defaultVariant": "on",
-      "description": "Drift scenario for the Weaver demo: payment renames its transactions metric to app.payment.transactions and currency attribute to currencyCode",
+      "description": "Weaver demo: on = payment records failures under the semconv error.type and checkout emits orderAmount/orderItemsCount; off = payment uses the legacy paymentError name",
       "metadata": {
         "schedulable": false
       },
@@ -157,7 +157,7 @@
       }
     },
     "paymentFailure": {
-      "defaultVariant": "off",
+      "defaultVariant": "10%",
       "description": "Fail payment service charge requests n%",
       "state": "ENABLED",
       "variants": {

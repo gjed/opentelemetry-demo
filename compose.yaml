@@ -528,7 +528,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 40M
+          memory: 80M
     restart: unless-stopped
     ports:
       - "${PRODUCT_CATALOG_PORT}"

@@ -39,27 +39,31 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 | `make demo-check`             | Validate the telemetry schema                                               |
 | `make demo-stats`             | Registry statistics (groups, attributes, metrics, incl. the semconv dependency) |
 | `make demo-generate`          | Generate dashboard 02 and its alerts from `telemetry-schema/`               |
-| `make demo-generate-baseline` | Generate dashboard 01 and its alerts from the schema with the `FIX(drift)` names applied |
+| `make demo-generate-baseline` | Generate dashboard 01 and its alerts from the schema with the legacy `paymentError` label (the dashboard the team wrote) |
 | `make demo-provision`         | Copy generated artifacts into the Grafana provisioning dirs                 |
 | `make demo-clean`             | Remove `output/` (the provisioned copies are kept)                          |
-| `make demo-livecheck`         | Live-check findings of the last 60s, one line per item and violation        |
+| `make demo-livecheck`         | Live-check findings of the last 10m, one line per item and violation        |
+| `make demo-livecheck-raw`     | Raw live-check output of the last 10m; filter with `LIVECHECK_FILTER=rpc`   |
 | `make demo-logs`              | Tail the full Weaver live-check output                                      |
 | `make demo-build-payment`     | Rebuild the payment service after code changes                              |
 | `make demo-restart-payment`   | Restart payment (needed after flipping the flag)                            |
 
 ## Demo Walkthrough
 
-The `telemetrySchemaBreak` flag is **on by default**: payment and checkout
-emit telemetry a developer "fixed" by hand, and nobody noticed. The demo has
-no moving parts: no flag flip, no restart, no Grafana reload. Everything is
-provisioned at `make demo-start`.
+The `telemetrySchemaBreak` flag is **on by default**, together with
+`paymentFailure` at 10%: about one payment in ten fails. The demo has no moving
+parts: no flag flip, no restart, no Grafana reload. Everything is provisioned at
+`make demo-start`, and the load generator keeps ~3 payments per second flowing.
 
-With the flag on:
+The story: the payment service was fixed to follow the schema and records every
+failure on `demo.payment.transactions` with the semconv attribute `error.type`.
+The team's dashboard and alerts were written against the old label name
+(`paymentError`), so they still show the payment rate and silently lost the error
+rate. With the flag off the service emits `paymentError` again.
 
-- payment emits `app.payment.transactions` with the attribute `currencyCode`
-  instead of `demo.payment.transactions` with `demo.payment.currency`
-- checkout emits `orderAmount` and `orderItemsCount` on the `PlaceOrder` span
-  instead of `demo.order.amount` and `demo.order.items.count`
+Checkout drifts the other way: it emits `orderAmount` and `orderItemsCount` on
+the `PlaceOrder` span instead of `demo.order.amount` and `demo.order.items.count`.
+Only live-check sees that one.
 
 ### Act 1 -- The schema
 
@@ -75,7 +79,8 @@ telemetry-schema/
 ```
 
 `metrics/payment.yaml` declares `demo.payment.transactions` (counter) with the
-required attribute `demo.payment.currency`. `make demo-stats` shows what the
+required attribute `demo.payment.currency` and the conditionally required
+semconv attribute `error.type` (set when the transaction failed). `make demo-stats` shows what the
 registry resolves to once the semconv dependency is merged in.
 
 ### Act 2 -- Generate from the schema
@@ -87,12 +92,13 @@ make demo-generate   # weaver registry generate ... grafana
 `weaver-templates/registry/grafana/*.j2` turn the registry into
 `output/weaver-demo-dashboard.json` and `output/weaver-demo-alerting.yml`:
 one panel per metric of the payment, cart and currency services, grouped by
-the metric's attributes, and the operational alerts a team would write by
-hand, with thresholds taken from the metric annotations in the registry
-(`alert_min_per_min`, `alert_min_distinct`, `alert_max_p95_ms`):
+the metric's attributes. Metrics with an error attribute get a second panel with
+the error rate. The alerts are the ones a team would write by hand, with
+thresholds taken from the metric annotations in the registry
+(`alert_min_per_min`, `alert_max_error_pct`, `alert_max_p95_ms`):
 
 - *Payment transaction counter: under 1 per minute*
-- *Payment transaction counter: fewer than 2 distinct values of currency code for the transaction*
+- *Payment transaction counter: error rate over 2%*
 - *Cart add item operation latency: p95 over 500 ms*
 - *Cart retrieval operation latency: p95 over 500 ms*
 - *Currency conversion counter: under 10 per minute*
@@ -107,62 +113,55 @@ copies it; `make demo-clean` removes `output/`).
 Open **01 - Baseline: the dashboard the team wrote**:
 <http://localhost:8080/grafana/d/weaver-01-baseline>
 
-Same template, generated from the schema *as the code emits it today* (the
-`FIX(drift)` names). Payment, cart and currency panels have data; the
-**Schema alerts** column shows the five rules, all green. Payments are
-flowing, in two currencies, latency is fine. Nothing here says the names are
-wrong.
+Same template, generated from the schema with the error attribute under its old
+name (`paymentError`, the `LEGACY(baseline)` block in `metrics/payment.yaml`).
+The payment rate panel shows ~3 transactions per second in two currencies, cart
+and currency have data, the **Schema alerts** column shows all five rules green.
+The error rate panel reads **0%**, and the alert on it is green. Nothing here
+says payments are failing.
 
 ### Act 4 -- The dashboard generated from the schema
 
 Open **02 - Generated from the telemetry schema**:
 <http://localhost:8080/grafana/d/weaver-02-schema>
 
-Same panel titles, same alert titles, but the queries use the names declared
-in the schema:
+Same panel titles, same alert titles, same thresholds. The payment rate panel is
+identical, but the error rate panel queries `error.type` as declared in the
+schema, and it reads **~10%**. *Payment transaction counter: error rate over 2%*
+is red and linked to that panel. Cart and currency are identical to 01.
 
-- **Payment transaction counter** is a flat zero line: no sample named
-  `demo_payment_transactions_total` arrives
-- two red alerts, both linked to that panel: *Payment transaction counter:
-  under 1 per minute* (payments look stopped) and *Payment transaction
-  counter: fewer than 2 distinct values of currency code for the transaction*
-  (the currency label looks gone). Same titles as in 01, same thresholds:
-  only the series they read differ
-- cart and currency are identical to 01: those services follow the schema
-
-### Act 5 -- Live-check names the culprit
+### Act 5 -- Live-check
 
 ```bash
 make demo-livecheck
 ```
 
 Weaver receives the payment and checkout telemetry (see *How It Works*) and
-compares it with the registry. The top lines, with sample counts:
+compares it with the registry. Payment is silent: it conforms to the schema,
+which is exactly why dashboard 01 is the odd one out. Checkout is not:
 
 ```text
-33x  Metric app.payment.transactions: Attribute 'currencyCode' does not exist in the registry.
-33x  Metric app.payment.transactions: Attribute key 'currencyCode' does not match name formatting rules.
-26x  Metric app.payment.transactions: Metric does not exist in the registry.
- 3x  Span oteldemo.CheckoutService/PlaceOrder: Attribute 'orderAmount' does not exist in the registry.
- 3x  Span oteldemo.CheckoutService/PlaceOrder: Attribute 'orderItemsCount' does not exist in the registry.
+192x  Span oteldemo.CheckoutService/PlaceOrder: Attribute 'orderAmount' does not exist in the registry.
+192x  Span oteldemo.CheckoutService/PlaceOrder: Attribute 'orderItemsCount' does not exist in the registry.
+192x  Span oteldemo.CheckoutService/PlaceOrder: Attribute key 'orderAmount' does not match name formatting rules.
+192x  Span oteldemo.CheckoutService/PlaceOrder: Attribute key 'orderItemsCount' does not match name formatting rules.
 ```
 
 The rest of the list is deprecated semconv attributes (`rpc.system`,
-`net.peer.name`, `messaging.operation`, ...) still used by upstream
-instrumentation: a second class of drift the registry catches for free.
+`rpc.service`, `net.peer.name`, ...) still used by upstream instrumentation: a
+second class of drift the registry catches for free.
 
 ### The point
 
-Dashboards, alerts and live-check all came from one YAML. The dashboard the
-team wrote (01) cannot see the drift because it was written against the drift:
-its alerts stay green. The one generated from the contract (02) pages on it as
-a real outage, and Weaver names the two renamed fields. The fix for the metric name goes in the code (or, if the new name is
-the one you want, in the schema: `make demo-generate` then follows). The fix
-for `currencyCode` can only go in the code: a name without a namespace fails
-the naming rules whatever the registry says.
+Dashboards, alerts and live-check all came from one YAML. The dashboard the team
+wrote (01) was correct on the day it was written and went blind when the label
+changed: its alerts stay green while one payment in ten fails. The one generated
+from the contract (02) shows the failures and pages on them, and Weaver names
+the checkout attributes that left the registry.
 
-To show the flip the other way (flag off, `make demo-restart-payment`): within
-~40s dashboard 01 goes red and 02 goes green.
+To show the other direction (flag off, `make demo-restart-payment`): payment
+goes back to `paymentError`, so within a minute 01 shows ~10% and goes red, and
+02 reads 0%.
 
 ## How It Works
 
@@ -192,8 +191,9 @@ To show the flip the other way (flag off, `make demo-restart-payment`): within
   exporter times out and the drift samples get dropped
 - **Weaver live-check** compares incoming telemetry against the mounted schema
   and reports violations
-- The **feature flag** (`telemetrySchemaBreak`) introduces intentional drift in
-  the payment service to demonstrate detection
+- The **feature flag** (`telemetrySchemaBreak`) selects the name of the payment
+  error attribute (`error.type` on, `paymentError` off) and makes checkout emit
+  the drifted span attributes
 
 ## What Weaver Caught - and What It Could Have
 
@@ -406,7 +406,7 @@ trips all absence alerts; they clear within 30s. Verify samples reach
 Prometheus:
 
 ```bash
-curl -s 'http://localhost:9090/api/v1/query?query=app_payment_transactions_total' | jq .
+curl -s 'http://localhost:9090/api/v1/query?query=demo_payment_transactions_total' | jq .
 ```
 
 ### Collector fails to start with the overlay

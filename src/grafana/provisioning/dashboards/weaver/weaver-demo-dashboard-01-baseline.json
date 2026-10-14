@@ -19,14 +19,14 @@
     {
       "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
       "id": 1,      "options": {
-        "content": "### What the team sees today\n\nPanels and alerts written against the metric and attribute names the services **currently emit**. Everything is green: nothing here says the names drifted from the telemetry schema.",
+        "content": "### What the team sees today\n\nPanels and alerts written by hand, on the label names the team knew when they built them. The payment rate is fine and every alert is green. The error-rate panel reads the **legacy label** (`paymentError`): since the service moved to the schema name, this panel can no longer see a single failure.",
         "mode": "markdown"
       },
       "title": "01 - Baseline: the dashboard the team wrote",
       "type": "text"
     },
     {
-      "gridPos": { "h": 16, "w": 6, "x": 18, "y": 3 },
+      "gridPos": { "h": 24, "w": 6, "x": 18, "y": 3 },
       "id": 2,      "options": {
         "alertName": "",
         "dashboardAlerts": true,
@@ -59,7 +59,11 @@
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }            ]
           },
           "unit": "{transaction}"
         },
@@ -72,14 +76,14 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
-          "editorMode": "code",          "expr": "sum by (currencyCode) (rate(app_payment_transactions_total[30s])) or on() vector(0)",          "interval": "5s",
-          "legendFormat": "{{currencyCode}}",
+          "editorMode": "code",          "expr": "sum by (demo_payment_currency) (rate(demo_payment_transactions_total[30s])) or on() vector(0)",          "interval": "5s",
+          "legendFormat": "{{demo_payment_currency}}",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Payment transaction counter",
-      "description": "Rate of `app.payment.transactions` (payment service), split by currencyCode. Prometheus series: `app_payment_transactions_total` with labels currencyCode. A flat zero line means no sample with this name arrived in the last 30s. Linked alerts: see the Schema alerts list.",
+      "description": "Rate of `demo.payment.transactions` (payment service), split by demo.payment.currency. Prometheus series: `demo_payment_transactions_total` with labels demo_payment_currency. A flat zero line means no sample with this name arrived in the last 30s. Linked alerts: see the Schema alerts list.",
       "type": "timeseries"
     }    ,{
       "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
@@ -92,13 +96,56 @@
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false,
+            "thresholdsStyle": { "mode": "line" }          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 2 }            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 3 },      "id": 4,      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
+          "editorMode": "code",          "expr": "100 * (sum(rate(demo_payment_transactions_total{paymentError!=\"\"}[1m])) or on() vector(0)) / sum(rate(demo_payment_transactions_total[1m]))",          "interval": "5s",
+          "legendFormat": "error rate",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Payment transaction counter: error rate",
+      "description": "Share of `demo.payment.transactions` samples carrying `paymentError` in the last minute (payment service). 0 means no sample carried the attribute: either no errors, or the attribute is recorded under another name.",
+      "type": "timeseries"
+    }    ,{
+      "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }            ]
           },
           "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 3 },      "id": 4,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 11 },      "id": 5,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -125,13 +172,17 @@
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }            ]
           },
           "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 11 },      "id": 5,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 11 },      "id": 6,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -158,13 +209,17 @@
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }            ]
           },
           "unit": "{conversion}"
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 11 },      "id": 6,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 19 },      "id": 7,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },

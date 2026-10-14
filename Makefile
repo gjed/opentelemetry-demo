@@ -437,16 +437,15 @@ WEAVER?=docker run --rm -u $(shell id -u):$(shell id -g) -v $(CURDIR):/work -w /
 demo-generate:
 	$(WEAVER) registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies -D variant=schema grafana
 
-# Generate dashboard 02 ("after drift") from the schema with the FIX(drift)
-# edits applied: the names the developer actually shipped. Works on a temp copy
-# of the registry so telemetry-schema/ keeps the correct names. To do it by
-# hand instead, apply the `# FIX(drift)` comments in telemetry-schema/ and run
-# `make demo-generate`.
+# Generate dashboard 01 ("the team wrote it") from a copy of the schema in which
+# the error attribute carries its legacy name `paymentError` (the LEGACY(baseline)
+# block in metrics/payment.yaml). Works on a temp copy so telemetry-schema/ keeps
+# error.type. To do it by hand instead, apply the same three changes in the copy.
 .PHONY: demo-generate-baseline
 demo-generate-baseline:
 	rm -rf output/baseline-registry && cp -r telemetry-schema output/baseline-registry
-	sed -i -E 's/^(\s*(- )?(key|name|ref)): demo\.payment\.transactions$$/\1: app.payment.transactions/; s/^(\s*(- )?(key|ref)): demo\.payment\.currency$$/\1: currencyCode/; s/^(\s*(- )?(key|ref)): demo\.order\.amount$$/\1: orderAmount/; s/^(\s*(- )?(key|ref)): demo\.order\.items\.count$$/\1: orderItemsCount/' \
-		output/baseline-registry/metrics/payment.yaml output/baseline-registry/attributes/order.yaml output/baseline-registry/services/checkout.yaml
+	sed -i -E '/^  # - key: paymentError$$/,/^  #   stability: stable$$/ s/^  # /  /; s/^(\s*- ref: )error\.type$$/\1paymentError/; s/^(\s*error_attribute: )error\.type$$/\1paymentError/' \
+		output/baseline-registry/metrics/payment.yaml
 	$(WEAVER) registry generate --registry output/baseline-registry/ --templates weaver-templates --skip-policies -D variant=baseline grafana output/baseline
 
 # Copy generated artifacts from output/ to the Grafana provisioning directories.
@@ -516,13 +515,57 @@ demo-stop:
 demo-logs:
 	$(DOCKER_COMPOSE_CMD) $(WEAVER_COMPOSE) logs -f weaver
 
-# Live-check findings of the last 60s: one line per (telemetry item, violation),
-# with how many samples showed it. The full per-sample report is 'make demo-logs'.
+# Live-check window for demo-livecheck / demo-livecheck-raw (any 'docker logs --since'
+# value, e.g. 'make demo-livecheck LIVECHECK_SINCE=1h'). Bounded by the weaver
+# container's log rotation (2 x 5MB in docker-compose-weaver.yml).
+LIVECHECK_SINCE ?= 10m
+# Prefix regex on attribute/metric names for demo-livecheck-raw (empty = full report).
+LIVECHECK_FILTER ?=
+
+# Keeps the raw (coloured) report, but only the entries whose name matches
+# ^LIVECHECK_FILTER, with their advice lines and parent Span/Metric/Data point lines.
+define LIVECHECK_AWK
+function flush(  i, j, k, lvl, m) {
+	if (!n) return
+	if (f == "") { for (i = 1; i <= n; i++) print L[i]; n = 0; return }
+	for (i = 1; i <= n; i++) K[i] = 0
+	if (H ~ ("^" f)) for (i = 1; i <= n; i++) K[i] = 1
+	else for (i = 2; i <= n; i++) {
+		if (K[i] || !A[i] || N[i] !~ ("^" f)) continue
+		K[i] = 1
+		for (j = i + 1; j <= n && S[j] != "" && I[j] > I[i]; j++) K[j] = 1
+		lvl = I[i]
+		for (k = i - 1; k >= 1; k--) if (S[k] != "" && I[k] < lvl) { K[k] = 1; lvl = I[k] }
+	}
+	m = 0
+	for (i = 1; i <= n; i++) if (K[i]) { print L[i]; m++ }
+	if (m) print ""
+	n = 0
+}
+BEGIN { e = sprintf("%c", 27) }
+{ s = $$0; gsub(e "\\[[0-9;]*m", "", s) }
+s ~ /^[^ ]/ { flush(); split(s, h, " "); H = h[2] }
+{
+	n++; L[n] = $$0; S[n] = s; I[n] = match(s, /[^ ]/) - 1
+	t = s; sub(/^ +/, "", t); split(t, w, " "); N[n] = w[1]; A[n] = (t !~ /^- /)
+}
+END { flush() }
+endef
+export LIVECHECK_AWK
+
+# Live-check findings of the last $(LIVECHECK_SINCE): one line per (telemetry item, violation),
+# with how many samples showed it. The full per-sample report is 'make demo-livecheck-raw'.
 .PHONY: demo-livecheck
 demo-livecheck:
-	@$(DOCKER_CMD) logs --since 60s weaver 2>&1 | sed -E 's/\x1b\[[0-9;]*m//g' \
+	@$(DOCKER_CMD) logs --since $(LIVECHECK_SINCE) weaver 2>&1 | sed -E 's/\x1b\[[0-9;]*m//g' \
 		| awk '/^(Metric|Span) /{h=$$1" "$$2} /\[violation\]/{sub(/^ *- \[violation\] /,""); print h": "$$0}' \
 		| sort | uniq -c | sort -k2,2 -k1,1rn | sed -E 's/^ *([0-9]+) /\1x  /'
+
+# Raw Weaver live-check output of the last $(LIVECHECK_SINCE) (full per-sample report).
+# LIVECHECK_FILTER=rpc keeps only rpc* attributes/metrics, e.g. 'make demo-livecheck-raw LIVECHECK_FILTER=rpc'.
+.PHONY: demo-livecheck-raw
+demo-livecheck-raw:
+	@$(DOCKER_CMD) logs --since $(LIVECHECK_SINCE) weaver 2>&1 | awk -v f='$(LIVECHECK_FILTER)' "$$LIVECHECK_AWK"
 
 # Build the services this fork changes (telemetrySchemaBreak flag in payment
 # and checkout, metric name fix in currency). `make demo-start` pulls upstream
