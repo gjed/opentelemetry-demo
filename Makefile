@@ -427,19 +427,39 @@ build-react-native-android:
 
 WEAVER_COMPOSE=$(DOCKER_COMPOSE_FILES) -f docker-compose-weaver.yml
 
-# Generate Grafana dashboard and alert rule from the telemetry schema.
+# Weaver CLI for codegen. Defaults to the pinned image so the generated
+# artifacts match the live-check sidecar; set WEAVER=weaver to use a local binary.
+WEAVER_IMAGE?=$(shell sed -n 's/^WEAVER_IMAGE=//p' .env)
+WEAVER?=docker run --rm -u $(shell id -u):$(shell id -g) -v $(CURDIR):/work -w /work $(WEAVER_IMAGE)
+
+# Generate Grafana dashboards and alert rules from the telemetry schema.
 .PHONY: demo-generate
 demo-generate:
-	weaver registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies --include-unreferenced grafana
+	$(WEAVER) registry generate --registry telemetry-schema/ --templates weaver-templates --skip-policies grafana
+
+# Generate dashboard 02 ("after drift") from the schema with the FIX(drift)
+# edits applied: the names the developer actually shipped. Works on a temp copy
+# of the registry so telemetry-schema/ keeps the correct names. To do it by
+# hand instead, apply the `# FIX(drift)` comments in telemetry-schema/ and run
+# `make demo-generate`.
+.PHONY: demo-generate-drift
+demo-generate-drift:
+	rm -rf output/drift-registry && cp -r telemetry-schema output/drift-registry
+	sed -i -E 's/^(\s*(- )?(key|name|ref)): demo\.payment\.transactions$$/\1: app.payment.transactions/; s/^(\s*(- )?(key|ref)): demo\.payment\.currency$$/\1: currencyCode/; s/^(\s*(- )?(key|ref)): demo\.order\.amount$$/\1: orderAmount/; s/^(\s*(- )?(key|ref)): demo\.order\.items\.count$$/\1: orderItemsCount/' \
+		output/drift-registry/metrics/payment.yaml output/drift-registry/attributes/order.yaml output/drift-registry/services/checkout.yaml
+	$(WEAVER) registry generate --registry output/drift-registry/ --templates weaver-templates --skip-policies -D variant=drift grafana output/drift
 
 # Copy generated artifacts from output/ to the Grafana provisioning directories.
 # Uses cp --update to avoid clobbering unchanged files; never deletes existing
 # non-generated files (alerts, dashboards placed by other means are safe).
 .PHONY: demo-provision
 demo-provision:
+	cp -v --update output/weaver-demo-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard.json
+	cp -v --update output/weaver-demo-alerting.yml src/grafana/provisioning/alerting/weaver-demo-alerting.yml
 	cp -v --update output/weaver-apm-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-apm-dashboard.json
 	cp -v --update output/weaver-comparison-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-comparison-dashboard.json
 	cp -v --update output/weaver-comparison-alerting.yml src/grafana/provisioning/alerting/weaver-comparison-alerting.yml
+	[ -f output/drift/weaver-demo-dashboard.json ] && cp -v --update output/drift/weaver-demo-dashboard.json src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard-02-drift.json || true
 	@echo ""
 	@echo "Generated artifacts copied to Grafana provisioning directories."
 
