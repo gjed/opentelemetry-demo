@@ -27,6 +27,9 @@ processors:
     metrics:
       metric:
         - 'resource.attributes["service.name"] != "payment" and resource.attributes["service.name"] != "checkout"'
+        # Runtime and SDK self-metrics are not part of the demo registry; keep
+        # live-check output focused on application telemetry.
+        - 'IsMatch(name, "^(nodejs|v8js|go|otel\\.sdk|process|http\\.client|rpc\\.client)\\..*")'
 
 service:
   pipelines:
