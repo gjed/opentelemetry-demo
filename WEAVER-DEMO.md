@@ -41,6 +41,7 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 | `make demo-provision`     | Copy generated artifacts into the Grafana provisioning dirs |
 | `make demo-check`         | Validate the telemetry schema                  |
 | `make demo-livecheck`     | Stop Weaver and print the live-check report    |
+| `make demo-build`         | Build payment, checkout and currency from this fork (run once before the demo) |
 | `make demo-build-payment` | Rebuild the payment service after code changes |
 | `make demo-restart-payment` | Restart payment after flipping the flag (the "deploy") |
 
