@@ -1,40 +1,58 @@
 ---
 apiVersion: 1
+# Rule UIDs provisioned by earlier versions of this template. Grafana file
+# provisioning never removes a rule on its own; listing them here keeps a
+# persistent Grafana from showing them next to the current rules.
+deleteRules:
+  - orgId: 1
+    uid: w02-payment-transactions
+  - orgId: 1
+    uid: w02-payment-transactions-currency
+  - orgId: 1
+    uid: w02-payment-transactions-currencyCode
+  - orgId: 1
+    uid: w02-cart-add-item-latency
+  - orgId: 1
+    uid: w02-cart-get-cart-latency
+  - orgId: 1
+    uid: w02-exchange-conversions
+  - orgId: 1
+    uid: w02-exchange-conversions-to
 groups:
   - orgId: 1
     name: Weaver02.10s
     folder: Weaver 02 - Generated from schema
     interval: 10s
     rules:
-      - uid: w02-payment-transactions
-        title: "Payment transaction counter: stopped being emitted"
+      - uid: w02-payment-transactions-rate
+        title: "Payment transaction counter: under 1 per minute"
         condition: threshold
         data:
-          - refId: absent
+          - refId: value
             relativeTimeRange:
-              from: 60
+              from: 120
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "absent_over_time(demo_payment_transactions_total[15s])"
+              expr: "sum(rate(demo_payment_transactions_total[1m])) * 60 or on() vector(0)"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: absent
+              refId: value
           - refId: threshold
             datasourceUid: __expr__
             model:
               conditions:
                 - evaluator:
                     params:
-                      - 0
-                    type: gt
+                      - 1
+                    type: lt
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: absent
+              expression: value
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
@@ -45,11 +63,8 @@ groups:
         annotations:
           __dashboardUid__: weaver-02-schema
           __panelId__: "3"
-          summary: "Schema metric demo.payment.transactions is no longer emitted"
-          description: >-
-            No sample of demo.payment.transactions (demo_payment_transactions_total) was received
-            in the last 15s. The metric was renamed or dropped: instrumentation
-            drifted from the telemetry schema.
+          summary: "Payment transaction counter dropped under 1 per minute"
+          description: "Fewer than 1 demo.payment.transactions events per minute in the last minute (payment service). Check the payment service and the services calling it."
         labels:
           service_name: "payment"
           service_namespace: opentelemetry-demo
@@ -58,35 +73,35 @@ groups:
         isPaused: false
         notification_settings:
           receiver: grafana-default-email
-      - uid: w02-payment-transactions-currency
-        title: "Payment transaction counter: missing required attribute (currency code for the transaction)"
+      - uid: w02-payment-transactions-mix
+        title: "Payment transaction counter: fewer than 2 distinct values of currency code for the transaction"
         condition: threshold
         data:
-          - refId: absent
+          - refId: value
             relativeTimeRange:
-              from: 60
+              from: 120
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "absent_over_time(demo_payment_transactions_total{demo_payment_currency=~\".+\"}[15s])"
+              expr: "count(sum by (demo_payment_currency) (rate(demo_payment_transactions_total{demo_payment_currency!=\"\"}[5m])) > 0) or on() vector(0)"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: absent
+              refId: value
           - refId: threshold
             datasourceUid: __expr__
             model:
               conditions:
                 - evaluator:
                     params:
-                      - 0
-                    type: gt
+                      - 2
+                    type: lt
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: absent
+              expression: value
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
@@ -97,11 +112,8 @@ groups:
         annotations:
           __dashboardUid__: weaver-02-schema
           __panelId__: "3"
-          summary: "Required attribute demo.payment.currency missing on demo.payment.transactions"
-          description: >-
-            No sample of demo.payment.transactions carried the required attribute
-            demo.payment.currency (demo_payment_currency) in the last 15s. The attribute was
-            renamed or dropped: instrumentation drifted from the telemetry schema.
+          summary: "Payment transaction counter seen for fewer than 2 distinct values of currency code for the transaction"
+          description: "In the last 5 minutes demo.payment.transactions was recorded for fewer than 2 distinct values of demo.payment.currency (payment service). Part of the traffic is missing or is not labelled."
         labels:
           service_name: "payment"
           service_namespace: opentelemetry-demo
@@ -110,35 +122,35 @@ groups:
         isPaused: false
         notification_settings:
           receiver: grafana-default-email
-      - uid: w02-cart-add-item-latency
-        title: "Cart add item operation latency: stopped being emitted"
+      - uid: w02-cart-add-item-latency-p95
+        title: "Cart add item operation latency: p95 over 500 ms"
         condition: threshold
         data:
-          - refId: absent
+          - refId: value
             relativeTimeRange:
-              from: 60
+              from: 120
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "absent_over_time(demo_cart_add_item_latency_seconds_count[15s])"
+              expr: "histogram_quantile(0.95, sum by (le) (rate(demo_cart_add_item_latency_seconds_bucket[1m]))) * 1000 or on() vector(0)"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: absent
+              refId: value
           - refId: threshold
             datasourceUid: __expr__
             model:
               conditions:
                 - evaluator:
                     params:
-                      - 0
+                      - 500
                     type: gt
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: absent
+              expression: value
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
@@ -149,48 +161,45 @@ groups:
         annotations:
           __dashboardUid__: weaver-02-schema
           __panelId__: "4"
-          summary: "Schema metric demo.cart.add_item.latency is no longer emitted"
-          description: >-
-            No sample of demo.cart.add_item.latency (demo_cart_add_item_latency_seconds_count) was received
-            in the last 15s. The metric was renamed or dropped: instrumentation
-            drifted from the telemetry schema.
+          summary: "Cart add item operation latency p95 above 500 ms"
+          description: "The 95th percentile of demo.cart.add_item.latency was above 500 ms over the last minute (cart service)."
         labels:
           service_name: "cart"
           service_namespace: opentelemetry-demo
-          severity: critical
+          severity: warning
           source: weaver-codegen
         isPaused: false
         notification_settings:
           receiver: grafana-default-email
-      - uid: w02-cart-get-cart-latency
-        title: "Cart retrieval operation latency: stopped being emitted"
+      - uid: w02-cart-get-cart-latency-p95
+        title: "Cart retrieval operation latency: p95 over 500 ms"
         condition: threshold
         data:
-          - refId: absent
+          - refId: value
             relativeTimeRange:
-              from: 60
+              from: 120
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "absent_over_time(demo_cart_get_cart_latency_seconds_count[15s])"
+              expr: "histogram_quantile(0.95, sum by (le) (rate(demo_cart_get_cart_latency_seconds_bucket[1m]))) * 1000 or on() vector(0)"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: absent
+              refId: value
           - refId: threshold
             datasourceUid: __expr__
             model:
               conditions:
                 - evaluator:
                     params:
-                      - 0
+                      - 500
                     type: gt
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: absent
+              expression: value
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
@@ -201,119 +210,61 @@ groups:
         annotations:
           __dashboardUid__: weaver-02-schema
           __panelId__: "5"
-          summary: "Schema metric demo.cart.get_cart.latency is no longer emitted"
-          description: >-
-            No sample of demo.cart.get_cart.latency (demo_cart_get_cart_latency_seconds_count) was received
-            in the last 15s. The metric was renamed or dropped: instrumentation
-            drifted from the telemetry schema.
+          summary: "Cart retrieval operation latency p95 above 500 ms"
+          description: "The 95th percentile of demo.cart.get_cart.latency was above 500 ms over the last minute (cart service)."
         labels:
           service_name: "cart"
           service_namespace: opentelemetry-demo
-          severity: critical
-          source: weaver-codegen
-        isPaused: false
-        notification_settings:
-          receiver: grafana-default-email
-      - uid: w02-exchange-conversions
-        title: "Currency conversion counter: stopped being emitted"
-        condition: threshold
-        data:
-          - refId: absent
-            relativeTimeRange:
-              from: 60
-              to: 0
-            datasourceUid: webstore-metrics
-            model:
-              editorMode: code
-              expr: "absent_over_time(demo_exchange_conversions_total[15s])"
-              instant: true
-              intervalMs: 1000
-              maxDataPoints: 43200
-              range: false
-              refId: absent
-          - refId: threshold
-            datasourceUid: __expr__
-            model:
-              conditions:
-                - evaluator:
-                    params:
-                      - 0
-                    type: gt
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: absent
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: threshold
-              type: threshold
-        noDataState: OK
-        execErrState: Error
-        for: 0s
-        annotations:
-          __dashboardUid__: weaver-02-schema
-          __panelId__: "6"
-          summary: "Schema metric demo.exchange.conversions is no longer emitted"
-          description: >-
-            No sample of demo.exchange.conversions (demo_exchange_conversions_total) was received
-            in the last 15s. The metric was renamed or dropped: instrumentation
-            drifted from the telemetry schema.
-        labels:
-          service_name: "currency"
-          service_namespace: opentelemetry-demo
-          severity: critical
-          source: weaver-codegen
-        isPaused: false
-        notification_settings:
-          receiver: grafana-default-email
-      - uid: w02-exchange-conversions-to
-        title: "Currency conversion counter: missing required attribute (target currency code)"
-        condition: threshold
-        data:
-          - refId: absent
-            relativeTimeRange:
-              from: 60
-              to: 0
-            datasourceUid: webstore-metrics
-            model:
-              editorMode: code
-              expr: "absent_over_time(demo_exchange_conversions_total{demo_exchange_to=~\".+\"}[15s])"
-              instant: true
-              intervalMs: 1000
-              maxDataPoints: 43200
-              range: false
-              refId: absent
-          - refId: threshold
-            datasourceUid: __expr__
-            model:
-              conditions:
-                - evaluator:
-                    params:
-                      - 0
-                    type: gt
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: absent
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: threshold
-              type: threshold
-        noDataState: OK
-        execErrState: Error
-        for: 0s
-        annotations:
-          __dashboardUid__: weaver-02-schema
-          __panelId__: "6"
-          summary: "Required attribute demo.exchange.to missing on demo.exchange.conversions"
-          description: >-
-            No sample of demo.exchange.conversions carried the required attribute
-            demo.exchange.to (demo_exchange_to) in the last 15s. The attribute was
-            renamed or dropped: instrumentation drifted from the telemetry schema.
-        labels:
-          service_name: "currency"
-          service_namespace: opentelemetry-demo
           severity: warning
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: w02-exchange-conversions-rate
+        title: "Currency conversion counter: under 10 per minute"
+        condition: threshold
+        data:
+          - refId: value
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "sum(rate(demo_exchange_conversions_total[1m])) * 60 or on() vector(0)"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: value
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 10
+                    type: lt
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: value
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        annotations:
+          __dashboardUid__: weaver-02-schema
+          __panelId__: "6"
+          summary: "Currency conversion counter dropped under 10 per minute"
+          description: "Fewer than 10 demo.exchange.conversions events per minute in the last minute (currency service). Check the currency service and the services calling it."
+        labels:
+          service_name: "currency"
+          service_namespace: opentelemetry-demo
+          severity: critical
           source: weaver-codegen
         isPaused: false
         notification_settings:
