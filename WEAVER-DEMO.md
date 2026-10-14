@@ -42,7 +42,8 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 | `make demo-generate-baseline` | Generate dashboard 01 and its alerts from the schema with the `FIX(drift)` names applied |
 | `make demo-provision`         | Copy generated artifacts into the Grafana provisioning dirs                 |
 | `make demo-clean`             | Remove `output/` (the provisioned copies are kept)                          |
-| `make demo-livecheck`         | Live-check findings of the last 60s, one line per item and violation        |
+| `make demo-livecheck`         | Live-check findings of the last 10m, one line per item and violation        |
+| `make demo-livecheck-raw`     | Raw Weaver live-check output of the last 10m                                |
 | `make demo-logs`              | Tail the full Weaver live-check output                                      |
 | `make demo-build-payment`     | Rebuild the payment service after code changes                              |
 | `make demo-restart-payment`   | Restart payment (needed after flipping the flag)                            |

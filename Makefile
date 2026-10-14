@@ -516,13 +516,23 @@ demo-stop:
 demo-logs:
 	$(DOCKER_COMPOSE_CMD) $(WEAVER_COMPOSE) logs -f weaver
 
-# Live-check findings of the last 60s: one line per (telemetry item, violation),
-# with how many samples showed it. The full per-sample report is 'make demo-logs'.
+# Live-check window for demo-livecheck / demo-livecheck-raw (any 'docker logs --since'
+# value, e.g. 'make demo-livecheck LIVECHECK_SINCE=1h'). Bounded by the weaver
+# container's log rotation (2 x 5MB in docker-compose-weaver.yml).
+LIVECHECK_SINCE ?= 10m
+
+# Live-check findings of the last $(LIVECHECK_SINCE): one line per (telemetry item, violation),
+# with how many samples showed it. The full per-sample report is 'make demo-livecheck-raw'.
 .PHONY: demo-livecheck
 demo-livecheck:
-	@$(DOCKER_CMD) logs --since 60s weaver 2>&1 | sed -E 's/\x1b\[[0-9;]*m//g' \
+	@$(DOCKER_CMD) logs --since $(LIVECHECK_SINCE) weaver 2>&1 | sed -E 's/\x1b\[[0-9;]*m//g' \
 		| awk '/^(Metric|Span) /{h=$$1" "$$2} /\[violation\]/{sub(/^ *- \[violation\] /,""); print h": "$$0}' \
 		| sort | uniq -c | sort -k2,2 -k1,1rn | sed -E 's/^ *([0-9]+) /\1x  /'
+
+# Raw Weaver live-check output of the last $(LIVECHECK_SINCE) (full per-sample report, unfiltered).
+.PHONY: demo-livecheck-raw
+demo-livecheck-raw:
+	@$(DOCKER_CMD) logs --since $(LIVECHECK_SINCE) weaver 2>&1
 
 # Build the services this fork changes (telemetrySchemaBreak flag in payment
 # and checkout, metric name fix in currency). `make demo-start` pulls upstream
