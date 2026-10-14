@@ -20,5 +20,7 @@ attribute_groups:
       - ref: demo.order.id
       - ref: demo.shipping.amount
       - ref: demo.order.amount
+        # FIX(drift): ref: orderAmount
       - ref: demo.order.items.count
+        # FIX(drift): ref: orderItemsCount
       - ref: demo.cart.items.count

@@ -4,6 +4,10 @@
 file_format: definition/2
 attributes:
   - key: demo.payment.currency
+    # FIX(drift): the payment service now emits this attribute as `currencyCode`
+    # (telemetrySchemaBreak=on). To make the schema follow the code, replace the
+    # key above with the line below, then `make demo-generate-drift`.
+    # key: currencyCode
     type: string
     brief: Currency code for the transaction
     stability: stable
@@ -12,6 +16,10 @@ attributes:
 
 metrics:
   - name: demo.payment.transactions
+    # FIX(drift): the payment service now emits this metric as
+    # `app.payment.transactions` (telemetrySchemaBreak=on). Replace the name
+    # above with the line below to regenerate dashboard 02 and its alert.
+    # name: app.payment.transactions
     brief: Payment transaction counter
     instrument: counter
     unit: "{transaction}"
@@ -21,4 +29,5 @@ metrics:
       service: payment
     attributes:
       - ref: demo.payment.currency
+        # FIX(drift): ref: currencyCode
         requirement_level: required
