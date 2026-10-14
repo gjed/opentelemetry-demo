@@ -87,8 +87,17 @@ make demo-generate   # weaver registry generate ... grafana
 `weaver-templates/registry/grafana/*.j2` turn the registry into
 `output/weaver-demo-dashboard.json` and `output/weaver-demo-alerting.yml`:
 one panel per metric of the payment, cart and currency services, grouped by
-the metric's attributes, and per counter a liveness alert plus one alert per
-required attribute. Every alert is linked to the panel of its metric.
+the metric's attributes, and the operational alerts a team would write by
+hand, with thresholds taken from the metric annotations in the registry
+(`alert_min_per_min`, `alert_min_distinct`, `alert_max_p95_ms`):
+
+- *Payment transaction counter: under 1 per minute*
+- *Payment transaction counter: fewer than 2 distinct values of currency code for the transaction*
+- *Cart add item operation latency: p95 over 500 ms*
+- *Cart retrieval operation latency: p95 over 500 ms*
+- *Currency conversion counter: under 10 per minute*
+
+Every alert is linked to the panel of its metric.
 
 The same output is already provisioned as dashboard **02** (`make demo-provision`
 copies it; `make demo-clean` removes `output/`).
@@ -100,8 +109,9 @@ Open **01 - Baseline: the dashboard the team wrote**:
 
 Same template, generated from the schema *as the code emits it today* (the
 `FIX(drift)` names). Payment, cart and currency panels have data; the
-**Schema alerts** column shows six rules, all green. Nothing here says the
-names are wrong.
+**Schema alerts** column shows the five rules, all green. Payments are
+flowing, in two currencies, latency is fine. Nothing here says the names are
+wrong.
 
 ### Act 4 -- The dashboard generated from the schema
 
@@ -113,9 +123,11 @@ in the schema:
 
 - **Payment transaction counter** is a flat zero line: no sample named
   `demo_payment_transactions_total` arrives
-- two red alerts, both linked to that panel:
-  *Payment transaction counter: stopped being emitted* and
-  *Payment transaction counter: missing required attribute (currency code for the transaction)*
+- two red alerts, both linked to that panel: *Payment transaction counter:
+  under 1 per minute* (payments look stopped) and *Payment transaction
+  counter: fewer than 2 distinct values of currency code for the transaction*
+  (the currency label looks gone). Same titles as in 01, same thresholds:
+  only the series they read differ
 - cart and currency are identical to 01: those services follow the schema
 
 ### Act 5 -- Live-check names the culprit
@@ -142,9 +154,9 @@ instrumentation: a second class of drift the registry catches for free.
 ### The point
 
 Dashboards, alerts and live-check all came from one YAML. The dashboard the
-team wrote (01) cannot see the drift because it was written against the drift.
-The one generated from the contract (02) can, and so can the alert rules and
-Weaver. The fix for the metric name goes in the code (or, if the new name is
+team wrote (01) cannot see the drift because it was written against the drift:
+its alerts stay green. The one generated from the contract (02) pages on it as
+a real outage, and Weaver names the two renamed fields. The fix for the metric name goes in the code (or, if the new name is
 the one you want, in the schema: `make demo-generate` then follows). The fix
 for `currencyCode` can only go in the code: a name without a namespace fails
 the naming rules whatever the registry says.
