@@ -92,6 +92,14 @@
 {%- endmacro %}
 ---
 apiVersion: 1
+# Rule UIDs provisioned by earlier versions of this template. Grafana file
+# provisioning never removes a rule on its own; listing them here keeps a
+# persistent Grafana from showing them next to the current rules.
+deleteRules:
+{% for legacy in ["payment-transactions", "payment-transactions-currency", "payment-transactions-currencyCode", "cart-add-item-latency", "cart-get-cart-latency", "exchange-conversions", "exchange-conversions-to"] %}
+  - orgId: 1
+    uid: w{{ num }}-{{ legacy }}
+{% endfor -%}
 groups:
   - orgId: 1
     name: Weaver{{ num }}.10s

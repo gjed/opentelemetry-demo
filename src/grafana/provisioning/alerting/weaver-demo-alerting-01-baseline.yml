@@ -1,5 +1,23 @@
 ---
 apiVersion: 1
+# Rule UIDs provisioned by earlier versions of this template. Grafana file
+# provisioning never removes a rule on its own; listing them here keeps a
+# persistent Grafana from showing them next to the current rules.
+deleteRules:
+  - orgId: 1
+    uid: w01-payment-transactions
+  - orgId: 1
+    uid: w01-payment-transactions-currency
+  - orgId: 1
+    uid: w01-payment-transactions-currencyCode
+  - orgId: 1
+    uid: w01-cart-add-item-latency
+  - orgId: 1
+    uid: w01-cart-get-cart-latency
+  - orgId: 1
+    uid: w01-exchange-conversions
+  - orgId: 1
+    uid: w01-exchange-conversions-to
 groups:
   - orgId: 1
     name: Weaver01.10s
