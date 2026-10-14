@@ -1,31 +1,28 @@
-# Copyright The OpenTelemetry Authors
-# SPDX-License-Identifier: Apache-2.0
-
 ---
 apiVersion: 1
 groups:
   - orgId: 1
-    name: WeaverDemo.1m
+    name: WeaverDemo.10s
     folder: Weaver - Observability by Design
-    interval: 1m
+    interval: 10s
     rules:
-      - uid: weaver-app-ads-ad_requests
-        title: "Weaver: Ad request counter Liveness"
+      - uid: weaver-demo-ad-requests
+        title: "Weaver: demo.ad.requests stopped being emitted"
         condition: threshold
         data:
-          - refId: metric_rate
+          - refId: absent
             relativeTimeRange:
-              from: 600
+              from: 60
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "sum(rate(demo_ad_requests_total[5m]))"
+              expr: "absent_over_time(demo_ad_requests_total[15s])"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: metric_rate
+              refId: absent
           - refId: threshold
             datasourceUid: __expr__
             model:
@@ -34,59 +31,48 @@ groups:
                     params:
                       - 0
                     type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - threshold
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: metric_rate
+              expression: absent
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
               type: threshold
-        noDataState: NoData
+        noDataState: OK
         execErrState: Error
-        for: 2m
-        keepFiringFor: 2m
+        for: 0s
         annotations:
-          summary: "Schema metric demo.ad.requests is being emitted"
+          summary: "Schema metric demo.ad.requests is no longer emitted"
           description: >-
-            The metric demo.ad.requests (demo_ad_requests_total) is being
-            emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted - likely due to a metric rename or
-            instrumentation drift.
+            No sample of demo.ad.requests (demo_ad_requests_total) was received
+            in the last 15s. The metric was renamed or dropped: instrumentation
+            drifted from the telemetry schema.
         labels:
           service_name: "ad"
           service_namespace: opentelemetry-demo
-          severity: warning
+          severity: critical
           source: weaver-codegen
         isPaused: false
         notification_settings:
           receiver: grafana-default-email
-      - uid: weaver-app-confirmation-counter
-        title: "Weaver: Email confirmation counter Liveness"
+      - uid: weaver-demo-exchange-conversions
+        title: "Weaver: demo.exchange.conversions stopped being emitted"
         condition: threshold
         data:
-          - refId: metric_rate
+          - refId: absent
             relativeTimeRange:
-              from: 600
+              from: 60
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "sum(rate(demo_notification_confirmations_total[5m]))"
+              expr: "absent_over_time(demo_exchange_conversions_total[15s])"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: metric_rate
+              refId: absent
           - refId: threshold
             datasourceUid: __expr__
             model:
@@ -95,120 +81,48 @@ groups:
                     params:
                       - 0
                     type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - threshold
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: metric_rate
+              expression: absent
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
               type: threshold
-        noDataState: NoData
+        noDataState: OK
         execErrState: Error
-        for: 2m
-        keepFiringFor: 2m
+        for: 0s
         annotations:
-          summary: "Schema metric demo.notification.confirmations is being emitted"
+          summary: "Schema metric demo.exchange.conversions is no longer emitted"
           description: >-
-            The metric demo.notification.confirmations (demo_notification_confirmations_total) is being
-            emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted - likely due to a metric rename or
-            instrumentation drift.
-        labels:
-          service_name: "email"
-          service_namespace: opentelemetry-demo
-          severity: warning
-          source: weaver-codegen
-        isPaused: false
-        notification_settings:
-          receiver: grafana-default-email
-      - uid: weaver-app-currency
-        title: "Weaver: Currency conversion counter Liveness"
-        condition: threshold
-        data:
-          - refId: metric_rate
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: webstore-metrics
-            model:
-              editorMode: code
-              expr: "sum(rate(demo_exchange_conversions_counter_total[5m]))"
-              instant: true
-              intervalMs: 1000
-              maxDataPoints: 43200
-              range: false
-              refId: metric_rate
-          - refId: threshold
-            datasourceUid: __expr__
-            model:
-              conditions:
-                - evaluator:
-                    params:
-                      - 0
-                    type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - threshold
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: metric_rate
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: threshold
-              type: threshold
-        noDataState: NoData
-        execErrState: Error
-        for: 2m
-        keepFiringFor: 2m
-        annotations:
-          summary: "Schema metric demo.exchange.conversions_counter is being emitted"
-          description: >-
-            The metric demo.exchange.conversions_counter (demo_exchange_conversions_counter_total) is being
-            emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted - likely due to a metric rename or
-            instrumentation drift.
+            No sample of demo.exchange.conversions (demo_exchange_conversions_total) was received
+            in the last 15s. The metric was renamed or dropped: instrumentation
+            drifted from the telemetry schema.
         labels:
           service_name: "currency"
           service_namespace: opentelemetry-demo
-          severity: warning
+          severity: critical
           source: weaver-codegen
         isPaused: false
         notification_settings:
           receiver: grafana-default-email
-      - uid: weaver-app-payment-transactions
-        title: "Weaver: Payment transaction counter Liveness"
+      - uid: weaver-demo-notification-confirmations
+        title: "Weaver: demo.notification.confirmations stopped being emitted"
         condition: threshold
         data:
-          - refId: metric_rate
+          - refId: absent
             relativeTimeRange:
-              from: 600
+              from: 60
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "sum(rate(demo_payment_transactions_total[5m]))"
+              expr: "absent_over_time(demo_notification_confirmations_total[15s])"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: metric_rate
+              refId: absent
           - refId: threshold
             datasourceUid: __expr__
             model:
@@ -217,59 +131,98 @@ groups:
                     params:
                       - 0
                     type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - threshold
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: metric_rate
+              expression: absent
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
               type: threshold
-        noDataState: NoData
+        noDataState: OK
         execErrState: Error
-        for: 2m
-        keepFiringFor: 2m
+        for: 0s
         annotations:
-          summary: "Schema metric demo.payment.transactions is being emitted"
+          summary: "Schema metric demo.notification.confirmations is no longer emitted"
           description: >-
-            The metric demo.payment.transactions (demo_payment_transactions_total) is being
-            emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted - likely due to a metric rename or
-            instrumentation drift.
+            No sample of demo.notification.confirmations (demo_notification_confirmations_total) was received
+            in the last 15s. The metric was renamed or dropped: instrumentation
+            drifted from the telemetry schema.
+        labels:
+          service_name: "email"
+          service_namespace: opentelemetry-demo
+          severity: critical
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-demo-payment-transactions
+        title: "Weaver: demo.payment.transactions stopped being emitted"
+        condition: threshold
+        data:
+          - refId: absent
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "absent_over_time(demo_payment_transactions_total[15s])"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: absent
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: absent
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: "Schema metric demo.payment.transactions is no longer emitted"
+          description: >-
+            No sample of demo.payment.transactions (demo_payment_transactions_total) was received
+            in the last 15s. The metric was renamed or dropped: instrumentation
+            drifted from the telemetry schema.
         labels:
           service_name: "payment"
           service_namespace: opentelemetry-demo
-          severity: warning
+          severity: critical
           source: weaver-codegen
         isPaused: false
         notification_settings:
           receiver: grafana-default-email
-      - uid: weaver-app-shipping-items_count
-        title: "Weaver: Shipping items counter Liveness"
+      - uid: weaver-demo-recommendation-requests
+        title: "Weaver: demo.recommendation.requests stopped being emitted"
         condition: threshold
         data:
-          - refId: metric_rate
+          - refId: absent
             relativeTimeRange:
-              from: 600
+              from: 60
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "sum(rate(demo_shipping_items_shipped_total[5m]))"
+              expr: "absent_over_time(demo_recommendation_requests_total[15s])"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: metric_rate
+              refId: absent
           - refId: threshold
             datasourceUid: __expr__
             model:
@@ -278,99 +231,77 @@ groups:
                     params:
                       - 0
                     type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - threshold
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: metric_rate
+              expression: absent
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
               type: threshold
-        noDataState: NoData
+        noDataState: OK
         execErrState: Error
-        for: 2m
-        keepFiringFor: 2m
+        for: 0s
         annotations:
-          summary: "Schema metric demo.shipping.items_shipped is being emitted"
+          summary: "Schema metric demo.recommendation.requests is no longer emitted"
           description: >-
-            The metric demo.shipping.items_shipped (demo_shipping_items_shipped_total) is being
-            emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted - likely due to a metric rename or
-            instrumentation drift.
-        labels:
-          service_name: "shipping"
-          service_namespace: opentelemetry-demo
-          severity: warning
-          source: weaver-codegen
-        isPaused: false
-        notification_settings:
-          receiver: grafana-default-email
-      - uid: weaver-app_recommendations_counter
-        title: "Weaver: Recommendation request counter Liveness"
-        condition: threshold
-        data:
-          - refId: metric_rate
-            relativeTimeRange:
-              from: 600
-              to: 0
-            datasourceUid: webstore-metrics
-            model:
-              editorMode: code
-              expr: "sum(rate(demo_recommendation_requests_total[5m]))"
-              instant: true
-              intervalMs: 1000
-              maxDataPoints: 43200
-              range: false
-              refId: metric_rate
-          - refId: threshold
-            datasourceUid: __expr__
-            model:
-              conditions:
-                - evaluator:
-                    params:
-                      - 0
-                    type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - threshold
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
-              datasource:
-                type: __expr__
-                uid: __expr__
-              expression: metric_rate
-              intervalMs: 1000
-              maxDataPoints: 43200
-              refId: threshold
-              type: threshold
-        noDataState: NoData
-        execErrState: Error
-        for: 2m
-        keepFiringFor: 2m
-        annotations:
-          summary: "Schema metric demo.recommendation.requests is being emitted"
-          description: >-
-            The metric demo.recommendation.requests (demo_recommendation_requests_total) is being
-            emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted - likely due to a metric rename or
-            instrumentation drift.
+            No sample of demo.recommendation.requests (demo_recommendation_requests_total) was received
+            in the last 15s. The metric was renamed or dropped: instrumentation
+            drifted from the telemetry schema.
         labels:
           service_name: "recommendation"
           service_namespace: opentelemetry-demo
-          severity: warning
+          severity: critical
+          source: weaver-codegen
+        isPaused: false
+        notification_settings:
+          receiver: grafana-default-email
+      - uid: weaver-demo-shipping-items_shipped
+        title: "Weaver: demo.shipping.items_shipped stopped being emitted"
+        condition: threshold
+        data:
+          - refId: absent
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: webstore-metrics
+            model:
+              editorMode: code
+              expr: "absent_over_time(demo_shipping_items_shipped_total[15s])"
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: absent
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: absent
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: threshold
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: "Schema metric demo.shipping.items_shipped is no longer emitted"
+          description: >-
+            No sample of demo.shipping.items_shipped (demo_shipping_items_shipped_total) was received
+            in the last 15s. The metric was renamed or dropped: instrumentation
+            drifted from the telemetry schema.
+        labels:
+          service_name: "shipping"
+          service_namespace: opentelemetry-demo
+          severity: critical
           source: weaver-codegen
         isPaused: false
         notification_settings:
