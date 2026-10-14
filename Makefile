@@ -520,6 +520,39 @@ demo-logs:
 # value, e.g. 'make demo-livecheck LIVECHECK_SINCE=1h'). Bounded by the weaver
 # container's log rotation (2 x 5MB in docker-compose-weaver.yml).
 LIVECHECK_SINCE ?= 10m
+# Prefix regex on attribute/metric names for demo-livecheck-raw (empty = full report).
+LIVECHECK_FILTER ?=
+
+# Keeps the raw (coloured) report, but only the entries whose name matches
+# ^LIVECHECK_FILTER, with their advice lines and parent Span/Metric/Data point lines.
+define LIVECHECK_AWK
+function flush(  i, j, k, lvl, m) {
+	if (!n) return
+	if (f == "") { for (i = 1; i <= n; i++) print L[i]; n = 0; return }
+	for (i = 1; i <= n; i++) K[i] = 0
+	if (H ~ ("^" f)) for (i = 1; i <= n; i++) K[i] = 1
+	else for (i = 2; i <= n; i++) {
+		if (K[i] || !A[i] || N[i] !~ ("^" f)) continue
+		K[i] = 1
+		for (j = i + 1; j <= n && S[j] != "" && I[j] > I[i]; j++) K[j] = 1
+		lvl = I[i]
+		for (k = i - 1; k >= 1; k--) if (S[k] != "" && I[k] < lvl) { K[k] = 1; lvl = I[k] }
+	}
+	m = 0
+	for (i = 1; i <= n; i++) if (K[i]) { print L[i]; m++ }
+	if (m) print ""
+	n = 0
+}
+BEGIN { e = sprintf("%c", 27) }
+{ s = $$0; gsub(e "\\[[0-9;]*m", "", s) }
+s ~ /^[^ ]/ { flush(); split(s, h, " "); H = h[2] }
+{
+	n++; L[n] = $$0; S[n] = s; I[n] = match(s, /[^ ]/) - 1
+	t = s; sub(/^ +/, "", t); split(t, w, " "); N[n] = w[1]; A[n] = (t !~ /^- /)
+}
+END { flush() }
+endef
+export LIVECHECK_AWK
 
 # Live-check findings of the last $(LIVECHECK_SINCE): one line per (telemetry item, violation),
 # with how many samples showed it. The full per-sample report is 'make demo-livecheck-raw'.
@@ -529,10 +562,11 @@ demo-livecheck:
 		| awk '/^(Metric|Span) /{h=$$1" "$$2} /\[violation\]/{sub(/^ *- \[violation\] /,""); print h": "$$0}' \
 		| sort | uniq -c | sort -k2,2 -k1,1rn | sed -E 's/^ *([0-9]+) /\1x  /'
 
-# Raw Weaver live-check output of the last $(LIVECHECK_SINCE) (full per-sample report, unfiltered).
+# Raw Weaver live-check output of the last $(LIVECHECK_SINCE) (full per-sample report).
+# LIVECHECK_FILTER=rpc keeps only rpc* attributes/metrics, e.g. 'make demo-livecheck-raw LIVECHECK_FILTER=rpc'.
 .PHONY: demo-livecheck-raw
 demo-livecheck-raw:
-	@$(DOCKER_CMD) logs --since $(LIVECHECK_SINCE) weaver 2>&1
+	@$(DOCKER_CMD) logs --since $(LIVECHECK_SINCE) weaver 2>&1 | awk -v f='$(LIVECHECK_FILTER)' "$$LIVECHECK_AWK"
 
 # Build the services this fork changes (telemetrySchemaBreak flag in payment
 # and checkout, metric name fix in currency). `make demo-start` pulls upstream
