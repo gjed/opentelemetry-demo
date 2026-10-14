@@ -3,17 +3,19 @@
   SPDX-License-Identifier: Apache-2.0
 
   Grafana alerting rules generated from the OpenTelemetry Demo telemetry schema.
-  This template produces a liveness alert for each counter metric.
+  One rule per counter metric: it fires when the metric stops being emitted.
 
-  When a metric is renamed or dropped (telemetry drift), the alert goes to NoData.
+  Tuned for a live demo: services export every 5s, the group evaluates every
+  10s, the rule looks back 15s and has no pending period, so a renamed metric
+  (telemetry drift) turns the alert red within ~15-25s of the deploy.
 #}
 ---
 apiVersion: 1
 groups:
   - orgId: 1
-    name: WeaverDemo.1m
+    name: WeaverDemo.10s
     folder: Weaver - Observability by Design
-    interval: 1m
+    interval: 10s
     rules:
 {% for root_ns in ctx %}
 {% for metric in root_ns.metrics %}
@@ -24,22 +26,22 @@ groups:
 {% set service_name = metric.annotations.service %}
 {% endif %}
       - uid: weaver-{{ metric.metric_name | replace(".", "-") }}
-        title: "Weaver: {{ metric.brief | default(metric.metric_name, true) }} Liveness"
+        title: "Weaver: {{ metric.metric_name }} stopped being emitted"
         condition: threshold
         data:
-          - refId: metric_rate
+          - refId: absent
             relativeTimeRange:
-              from: 600
+              from: 60
               to: 0
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "sum(rate({{ prom_name }}[5m]))"
+              expr: "absent_over_time({{ prom_name }}[15s])"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
               range: false
-              refId: metric_rate
+              refId: absent
           - refId: threshold
             datasourceUid: __expr__
             model:
@@ -48,40 +50,29 @@ groups:
                     params:
                       - 0
                     type: gt
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - threshold
-                  reducer:
-                    params: []
-                    type: last
-                  type: query
               datasource:
                 type: __expr__
                 uid: __expr__
-              expression: metric_rate
+              expression: absent
               intervalMs: 1000
               maxDataPoints: 43200
               refId: threshold
               type: threshold
-        noDataState: NoData
+        noDataState: OK
         execErrState: Error
-        for: 2m
-        keepFiringFor: 2m
+        for: 0s
         annotations:
-          summary: "Schema metric {{ metric.metric_name }} is being emitted"
+          summary: "Schema metric {{ metric.metric_name }} is no longer emitted"
           description: >-
-            The metric {{ metric.metric_name }} ({{ prom_name }}) is being
-            emitted at a non-zero rate. If this alert goes to NoData, the metric
-            has stopped being emitted — likely due to a metric rename or
-            instrumentation drift.
+            No sample of {{ metric.metric_name }} ({{ prom_name }}) was received
+            in the last 15s. The metric was renamed or dropped: instrumentation
+            drifted from the telemetry schema.
         labels:
 {% if service_name %}
           service_name: "{{ service_name }}"
 {% endif %}
           service_namespace: opentelemetry-demo
-          severity: warning
+          severity: critical
           source: weaver-codegen
         isPaused: false
         notification_settings:

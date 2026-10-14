@@ -3,11 +3,26 @@
   SPDX-License-Identifier: Apache-2.0
 
   Grafana dashboard generated from the OpenTelemetry Demo telemetry schema.
-  This template produces a dashboard with one timeseries panel per metric.
+  One timeseries panel per metric, grouped by the metric's attributes.
 
-  Prometheus naming: dots become underscores, counters get _total suffix.
+  Prometheus naming (OTLP receiver): dots become underscores, the unit is
+  appended for base units (s -> _seconds, By -> _bytes), counters get _total,
+  histograms are queried through _bucket.
+
+  Parameters (weaver registry generate -D key=value):
+    variant: "baseline" (default) or "drift". Selects title, uid and header.
 #}
-{%- set ns = namespace(panel_id=1, y_pos=3) -%}
+{%- set variant = params.variant | default("baseline", true) -%}
+{%- if variant == "drift" -%}
+{%- set title = "02 - After drift: renamed telemetry (flag ON)" -%}
+{%- set uid = "weaver-02-drift" -%}
+{%- set header = "Generated from the schema **after** it was updated to the names a developer shipped (see the `# FIX` comments in `telemetry-schema/`). Empty until the `telemetrySchemaBreak` flag is flipped." -%}
+{%- else -%}
+{%- set title = "01 - Baseline: schema names (clean demo)" -%}
+{%- set uid = "weaver-01-baseline" -%}
+{%- set header = "Generated from `telemetry-schema/` with `weaver registry generate grafana`. Queries the registry names; goes empty when the `telemetrySchemaBreak` flag is flipped." -%}
+{%- endif -%}
+{%- set ns = namespace(panel_id=1, y_pos=9, col=0) -%}
 {
   "annotations": {
     "list": [
@@ -31,14 +46,48 @@
       "id": {{ ns.panel_id }},
       {%- set ns.panel_id = ns.panel_id + 1 %}
       "options": {
-        "content": "This dashboard was **generated from the telemetry schema** using `weaver registry generate grafana`.\nPanels query metrics defined in `telemetry-schema/metrics/`. When instrumentation drifts from the schema, panels break.",
+        "content": "{{ header }}",
         "mode": "markdown"
       },
-      "title": "Weaver-Generated Dashboard",
+      "title": "{{ title }}",
       "type": "text"
+    },
+    {
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 3 },
+      "id": {{ ns.panel_id }},
+      {%- set ns.panel_id = ns.panel_id + 1 %}
+      "options": {
+        "alertInstanceLabelFilter": "{source=\"weaver-codegen\"}",
+        "alertName": "",
+        "dashboardAlerts": false,
+        "groupBy": [],
+        "groupMode": "default",
+        "maxItems": 20,
+        "showInactiveAlerts": true,
+        "sortOrder": 1,
+        "stateFilter": {
+          "error": true,
+          "firing": true,
+          "noData": true,
+          "normal": true,
+          "pending": true,
+          "recovering": true
+        },
+        "viewMode": "list"
+      },
+      "title": "Schema alerts (generated from the same registry)",
+      "type": "alertlist"
     }
     {%- for root_ns in ctx %}
     {%- for metric in root_ns.metrics %}
+    {%- set base = metric.metric_name | replace(".", "_") %}
+    {%- if metric.unit == "s" %}{%- set base = base + "_seconds" %}
+    {%- elif metric.unit == "By" %}{%- set base = base + "_bytes" %}
+    {%- endif %}
+    {%- set labels = metric.attributes | default([]) | map(attribute="name") | map("replace", ".", "_") | list %}
+    {%- set by = labels | join(", ") %}
+    {%- set legend = "" %}
+    {%- if labels %}{%- set legend = "{{" ~ (labels | join("}} {{")) ~ "}}" %}{%- endif %}
     ,{
       "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
       "fieldConfig": {
@@ -56,10 +105,11 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": {{ (loop.index0 % 2) * 12 }}, "y": {{ ns.y_pos }} },
-      {%- if loop.index0 % 2 == 1 %}
+      "gridPos": { "h": 8, "w": 12, "x": {{ ns.col * 12 }}, "y": {{ ns.y_pos }} },
+      {%- if ns.col == 1 %}
       {%- set ns.y_pos = ns.y_pos + 8 %}
       {%- endif %}
+      {%- set ns.col = (ns.col + 1) % 2 %}
       "id": {{ ns.panel_id }},
       {%- set ns.panel_id = ns.panel_id + 1 %}
       "options": {
@@ -70,41 +120,35 @@
         {
           "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
           "editorMode": "code",
-          {%- set prom_name = metric.metric_name | replace(".", "_") %}
           {%- if metric.instrument == "counter" %}
-          {%- set prom_name = prom_name + "_total" %}
-          "expr": "rate({{ prom_name }}[$__rate_interval])",
+          "expr": "sum by ({{ by }}) (rate({{ base }}_total[30s]))",
           {%- elif metric.instrument == "histogram" %}
-          {%- set prom_name = prom_name + "_bucket" %}
-          "expr": "histogram_quantile(0.95, sum by (le) (rate({{ prom_name }}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le{% if by %}, {{ by }}{% endif %}) (rate({{ base }}_bucket[30s])))",
           {%- else %}
-          "expr": "{{ prom_name }}",
+          "expr": "sum by ({{ by }}) ({{ base }})",
           {%- endif %}
-          "interval": "2m",
-          "legendFormat": "{% raw %}{{{% endraw %}job{% raw %}}}{% endraw %}",
+          "interval": "5s",
+          "legendFormat": "{{ legend | trim if legend else metric.metric_name }}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "{{ metric.brief | default(metric.metric_name, true) }}",
+      "title": "{{ metric.brief | default(metric.metric_name, true) }} ({{ metric.metric_name }})",
       "description": "{{ metric.note | default('', true) | replace('"', '\\"') | replace('\n', ' ') }}",
       "type": "timeseries"
     }
     {%- endfor %}
-    {%- if root_ns.metrics | length % 2 == 1 %}
-    {%- set ns.y_pos = ns.y_pos + 8 %}
-    {%- endif %}
     {%- endfor %}
   ],
   "preload": false,
-  "refresh": "30s",
+  "refresh": "5s",
   "schemaVersion": 40,
-  "tags": ["weaver", "generated"],
+  "tags": ["weaver", "demo", "generated"],
   "templating": { "list": [] },
   "time": { "from": "now-15m", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "Weaver Demo - Schema-Generated Dashboard",
-  "uid": "weaver-demo-generated",
+  "title": "{{ title }}",
+  "uid": "{{ uid }}",
   "version": 1
 }

@@ -9,6 +9,16 @@ whitespace_control:
   lstrip_blocks: true
 
 templates:
+  - pattern: dashboard.json.j2
+    filter: semconv_grouped_metrics
+    application_mode: single
+    file_name: "weaver-demo-dashboard.json"
+
+  - pattern: alerting.yml.j2
+    filter: semconv_grouped_metrics
+    application_mode: single
+    file_name: "weaver-demo-alerting.yml"
+
   - pattern: apm-dashboard.json.j2
     filter: semconv_grouped_metrics
     application_mode: single
