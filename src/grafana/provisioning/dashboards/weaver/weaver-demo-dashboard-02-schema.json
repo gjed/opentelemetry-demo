@@ -26,7 +26,7 @@
       "type": "text"
     },
     {
-      "gridPos": { "h": 16, "w": 6, "x": 18, "y": 3 },
+      "gridPos": { "h": 24, "w": 6, "x": 18, "y": 3 },
       "id": 2,      "options": {
         "alertName": "",
         "dashboardAlerts": true,
@@ -59,7 +59,11 @@
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }            ]
           },
           "unit": "{transaction}"
         },
@@ -92,13 +96,56 @@
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false,
+            "thresholdsStyle": { "mode": "line" }          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 5 }            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 3 },      "id": 4,      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
+          "editorMode": "code",          "expr": "100 * (sum(rate(demo_payment_transactions_total{error_type!=\"\"}[1m])) or on() vector(0)) / sum(rate(demo_payment_transactions_total[1m]))",          "interval": "5s",
+          "legendFormat": "error rate",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Payment transaction counter: error rate",
+      "description": "Share of `demo.payment.transactions` samples carrying `error.type` in the last minute (payment service). 0 means no sample carried the attribute: either no errors, or the attribute is recorded under another name.",
+      "type": "timeseries"
+    }    ,{
+      "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }            ]
           },
           "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 3 },      "id": 4,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 11 },      "id": 5,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -125,13 +172,17 @@
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }            ]
           },
           "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 11 },      "id": 5,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 11 },      "id": 6,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -158,13 +209,17 @@
             "lineWidth": 1,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": false
+            "spanNulls": false          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }            ]
           },
           "unit": "{conversion}"
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 11 },      "id": 6,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 19 },      "id": 7,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },

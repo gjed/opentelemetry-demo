@@ -11,6 +11,8 @@ deleteRules:
   - orgId: 1
     uid: w01-payment-transactions-currencyCode
   - orgId: 1
+    uid: w01-payment-transactions-mix
+  - orgId: 1
     uid: w01-cart-add-item-latency
   - orgId: 1
     uid: w01-cart-get-cart-latency
@@ -35,7 +37,7 @@ groups:
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "sum(rate(app_payment_transactions_total[1m])) * 60 or on() vector(0)"
+              expr: "sum(rate(demo_payment_transactions_total[1m])) * 60 or on() vector(0)"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -64,7 +66,7 @@ groups:
           __dashboardUid__: weaver-01-baseline
           __panelId__: "3"
           summary: "Payment transaction counter dropped under 1 per minute"
-          description: "Fewer than 1 app.payment.transactions events per minute in the last minute (payment service). Check the payment service and the services calling it."
+          description: "Fewer than 1 demo.payment.transactions events per minute in the last minute (payment service). Check the payment service and the services calling it."
         labels:
           service_name: "payment"
           service_namespace: opentelemetry-demo
@@ -73,8 +75,8 @@ groups:
         isPaused: false
         notification_settings:
           receiver: grafana-default-email
-      - uid: w01-payment-transactions-mix
-        title: "Payment transaction counter: fewer than 2 distinct values of currency code for the transaction"
+      - uid: w01-payment-transactions-errors
+        title: "Payment transaction counter: error rate over 5%"
         condition: threshold
         data:
           - refId: value
@@ -84,7 +86,7 @@ groups:
             datasourceUid: webstore-metrics
             model:
               editorMode: code
-              expr: "count(sum by (currencyCode) (rate(app_payment_transactions_total{currencyCode!=\"\"}[5m])) > 0) or on() vector(0)"
+              expr: "100 * (sum(rate(demo_payment_transactions_total{paymentError!=\"\"}[1m])) or on() vector(0)) / sum(rate(demo_payment_transactions_total[1m]))"
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -96,8 +98,8 @@ groups:
               conditions:
                 - evaluator:
                     params:
-                      - 2
-                    type: lt
+                      - 5
+                    type: gt
               datasource:
                 type: __expr__
                 uid: __expr__
@@ -111,13 +113,13 @@ groups:
         for: 0s
         annotations:
           __dashboardUid__: weaver-01-baseline
-          __panelId__: "3"
-          summary: "Payment transaction counter seen for fewer than 2 distinct values of currency code for the transaction"
-          description: "In the last 5 minutes app.payment.transactions was recorded for fewer than 2 distinct values of currencyCode (payment service). Part of the traffic is missing or is not labelled."
+          __panelId__: "4"
+          summary: "Payment transaction counter error rate above 5%"
+          description: "More than 5% of demo.payment.transactions samples carried paymentError over the last minute (payment service)."
         labels:
           service_name: "payment"
           service_namespace: opentelemetry-demo
-          severity: warning
+          severity: critical
           source: weaver-codegen
         isPaused: false
         notification_settings:
@@ -160,7 +162,7 @@ groups:
         for: 0s
         annotations:
           __dashboardUid__: weaver-01-baseline
-          __panelId__: "4"
+          __panelId__: "5"
           summary: "Cart add item operation latency p95 above 500 ms"
           description: "The 95th percentile of demo.cart.add_item.latency was above 500 ms over the last minute (cart service)."
         labels:
@@ -209,7 +211,7 @@ groups:
         for: 0s
         annotations:
           __dashboardUid__: weaver-01-baseline
-          __panelId__: "5"
+          __panelId__: "6"
           summary: "Cart retrieval operation latency p95 above 500 ms"
           description: "The 95th percentile of demo.cart.get_cart.latency was above 500 ms over the last minute (cart service)."
         labels:
@@ -258,7 +260,7 @@ groups:
         for: 0s
         annotations:
           __dashboardUid__: weaver-01-baseline
-          __panelId__: "6"
+          __panelId__: "7"
           summary: "Currency conversion counter dropped under 10 per minute"
           description: "Fewer than 10 demo.exchange.conversions events per minute in the last minute (currency service). Check the currency service and the services calling it."
         labels:

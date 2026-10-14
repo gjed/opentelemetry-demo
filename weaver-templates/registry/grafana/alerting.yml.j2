@@ -7,9 +7,9 @@
   thresholds come from the metric annotations in the registry:
 
     alert_min_per_min   counter:   fire when fewer than N events per minute
-    alert_min_distinct  counter:   fire when the metric's first required
-                                   attribute had fewer than N distinct values
-                                   with traffic in the last 5 minutes
+    error_attribute     counter:   with alert_max_error_pct N: fire when more
+                                   than N percent of the events carry the
+                                   error attribute in the last minute
     alert_max_p95_ms    histogram: fire when the p95 is above N milliseconds
 
   Absent series count as zero (`or on() vector(0)`): a counter nobody emits
@@ -36,7 +36,8 @@
 {%- set num = "02" %}{%- set dash_uid = "weaver-02-schema" %}{%- set folder = "Weaver 02 - Generated from schema" -%}
 {%- endif -%}
 {#- Panel ids follow the dashboard template: 1 header, 2 alert list, then one
-    per included metric in registry order. -#}
+    per panel in registry order (a metric with an error attribute has two:
+    its rate panel, then its error-rate panel). -#}
 {%- set ns = namespace(panel_id=3) -%}
 {%- macro rule(uid, title, panel_id, expr, op, threshold, severity, service_name, summary, description) %}
 
@@ -96,7 +97,7 @@ apiVersion: 1
 # provisioning never removes a rule on its own; listing them here keeps a
 # persistent Grafana from showing them next to the current rules.
 deleteRules:
-{% for legacy in ["payment-transactions", "payment-transactions-currency", "payment-transactions-currencyCode", "cart-add-item-latency", "cart-get-cart-latency", "exchange-conversions", "exchange-conversions-to"] %}
+{% for legacy in ["payment-transactions", "payment-transactions-currency", "payment-transactions-currencyCode", "payment-transactions-mix", "cart-add-item-latency", "cart-get-cart-latency", "exchange-conversions", "exchange-conversions-to"] %}
   - orgId: 1
     uid: w{{ num }}-{{ legacy }}
 {% endfor -%}
@@ -111,14 +112,16 @@ groups:
 {%- for metric in root_ns.metrics %}
 {%- if metric.annotations is defined and metric.annotations.service is defined and metric.annotations.service == svc %}
 {%- set panel_id = ns.panel_id %}
-{%- set ns.panel_id = ns.panel_id + 1 %}
 {%- set ann = metric.annotations %}
+{%- set ns.panel_id = ns.panel_id + (2 if ann.error_attribute is defined else 1) %}
 {%- set base = metric.metric_name | replace(".", "_") %}
 {%- if metric.unit == "s" %}{%- set base = base + "_seconds" %}{%- elif metric.unit == "By" %}{%- set base = base + "_bytes" %}{%- endif %}
 {%- set brief = metric.brief | default(metric.metric_name, true) %}
 {#- uid: metric name without its first namespace segment (demo./app.) #}
 {%- set short = metric.metric_name | regex_replace("^[^.]+\\.", "") | replace(".", "-") | replace("_", "-") %}
 {%- set service_name = ann.service %}
+{%- set err = ann.error_attribute | default("", true) %}
+{%- set errexpr = "100 * (sum(rate(" ~ base ~ "_total{" ~ (err | replace(".", "_")) ~ "!=\\\"\\\"}[1m])) or on() vector(0)) / sum(rate(" ~ base ~ "_total[1m]))" %}
 {%- if metric.instrument == "counter" and ann.alert_min_per_min is defined %}
 {{ rule("w" ~ num ~ "-" ~ short ~ "-rate",
         brief ~ ": under " ~ ann.alert_min_per_min ~ " per minute",
@@ -128,20 +131,14 @@ groups:
         brief ~ " dropped under " ~ ann.alert_min_per_min ~ " per minute",
         "Fewer than " ~ ann.alert_min_per_min ~ " " ~ metric.metric_name ~ " events per minute in the last minute (" ~ service_name ~ " service). Check the " ~ service_name ~ " service and the services calling it.") }}
 {%- endif %}
-{%- if metric.instrument == "counter" and ann.alert_min_distinct is defined %}
-{%- set required = metric.attributes | default([]) | selectattr("requirement_level", "equalto", "required") | list %}
-{%- if required | length > 0 %}
-{%- set attr = required[0] %}
-{%- set label = attr.name | replace(".", "_") %}
-{%- set what = attr.brief | default(attr.name, true) | lower %}
-{{ rule("w" ~ num ~ "-" ~ short ~ "-mix",
-        brief ~ ": fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ what,
-        panel_id,
-        "count(sum by (" ~ label ~ ") (rate(" ~ base ~ "_total{" ~ label ~ "!=\\\"\\\"}[5m])) > 0) or on() vector(0)",
-        "lt", ann.alert_min_distinct, "warning", service_name,
-        brief ~ " seen for fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ what,
-        "In the last 5 minutes " ~ metric.metric_name ~ " was recorded for fewer than " ~ ann.alert_min_distinct ~ " distinct values of " ~ attr.name ~ " (" ~ service_name ~ " service). Part of the traffic is missing or is not labelled.") }}
-{%- endif %}
+{%- if metric.instrument == "counter" and ann.error_attribute is defined and ann.alert_max_error_pct is defined %}
+{{ rule("w" ~ num ~ "-" ~ short ~ "-errors",
+        brief ~ ": error rate over " ~ ann.alert_max_error_pct ~ "%",
+        panel_id + 1,
+        errexpr,
+        "gt", ann.alert_max_error_pct, "critical", service_name,
+        brief ~ " error rate above " ~ ann.alert_max_error_pct ~ "%",
+        "More than " ~ ann.alert_max_error_pct ~ "% of " ~ metric.metric_name ~ " samples carried " ~ err ~ " over the last minute (" ~ service_name ~ " service).") }}
 {%- endif %}
 {%- if metric.instrument == "histogram" and ann.alert_max_p95_ms is defined %}
 {{ rule("w" ~ num ~ "-" ~ short ~ "-p95",
