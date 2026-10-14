@@ -22,7 +22,12 @@
 {%- set uid = "weaver-01-baseline" -%}
 {%- set header = "Generated from `telemetry-schema/` with `weaver registry generate grafana`. Queries the registry names; goes empty when the `telemetrySchemaBreak` flag is flipped." -%}
 {%- endif -%}
-{%- set ns = namespace(panel_id=1, y_pos=9, col=0) -%}
+{#- Layout: header full width; metric panels two per row in the left 18
+    columns; the alert list in a narrow column on the right, as tall as the
+    metric grid. -#}
+{%- set ns = namespace(panel_id=1, y_pos=3, col=0, metrics=0) -%}
+{%- for root_ns in ctx %}{%- set ns.metrics = ns.metrics + (root_ns.metrics | length) %}{%- endfor -%}
+{%- set rows = (ns.metrics + 1) // 2 -%}
 {
   "annotations": {
     "list": [
@@ -53,7 +58,7 @@
       "type": "text"
     },
     {
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 3 },
+      "gridPos": { "h": {{ rows * 8 }}, "w": 6, "x": 18, "y": 3 },
       "id": {{ ns.panel_id }},
       {%- set ns.panel_id = ns.panel_id + 1 %}
       "options": {
@@ -75,7 +80,8 @@
         },
         "viewMode": "list"
       },
-      "title": "Schema alerts (generated from the same registry)",
+      "title": "Schema alerts",
+      "description": "Alert rules generated from the same telemetry schema as the panels.",
       "type": "alertlist"
     }
     {%- for root_ns in ctx %}
@@ -105,7 +111,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": {{ ns.col * 12 }}, "y": {{ ns.y_pos }} },
+      "gridPos": { "h": 8, "w": 9, "x": {{ ns.col * 9 }}, "y": {{ ns.y_pos }} },
       {%- if ns.col == 1 %}
       {%- set ns.y_pos = ns.y_pos + 8 %}
       {%- endif %}

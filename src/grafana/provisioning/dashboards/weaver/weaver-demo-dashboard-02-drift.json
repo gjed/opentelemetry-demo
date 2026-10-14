@@ -26,7 +26,7 @@
       "type": "text"
     },
     {
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 3 },
+      "gridPos": { "h": 32, "w": 6, "x": 18, "y": 3 },
       "id": 2,      "options": {
         "alertInstanceLabelFilter": "{source=\"weaver-codegen\"}",
         "alertName": "",
@@ -46,7 +46,8 @@
         },
         "viewMode": "list"
       },
-      "title": "Schema alerts (generated from the same registry)",
+      "title": "Schema alerts",
+      "description": "Alert rules generated from the same telemetry schema as the panels.",
       "type": "alertlist"
     }    ,{
       "datasource": { "type": "prometheus", "uid": "webstore-metrics" },
@@ -65,7 +66,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },      "id": 3,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 3 },      "id": 3,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -98,7 +99,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },      "id": 4,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 3 },      "id": 4,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -131,7 +132,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },      "id": 5,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 11 },      "id": 5,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -164,7 +165,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },      "id": 6,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 11 },      "id": 6,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -197,7 +198,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },      "id": 7,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 19 },      "id": 7,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -230,7 +231,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },      "id": 8,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 19 },      "id": 8,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -263,7 +264,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 },      "id": 9,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 0, "y": 27 },      "id": 9,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
@@ -296,7 +297,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 33 },      "id": 10,      "options": {
+      "gridPos": { "h": 8, "w": 9, "x": 9, "y": 27 },      "id": 10,      "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
