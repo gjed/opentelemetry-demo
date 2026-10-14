@@ -97,8 +97,8 @@ checklicense:	$(ADDLICENSE)
 		-ignore .expo/** \
 		-ignore Pods/** \
 		-ignore ".chloggen/**" \
-		-ignore .opencode/** \
-		-ignore openspec/** \
+		-ignore ".opencode/**" \
+		-ignore "openspec/**" \
 		-ignore **/extras/** \
 		-ignore **/vendor/** \
 		-ignore **/.venv/** \
