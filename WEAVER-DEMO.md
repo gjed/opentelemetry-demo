@@ -30,144 +30,127 @@ Wait ~3 minutes for services to stabilize and metrics to populate.
 
 ### Make Targets
 
-| Target                    | Description                                    |
-| ------------------------- | ---------------------------------------------- |
-| `make demo-start`         | Start the demo (idempotent, no-op if running)  |
-| `make demo-restart`       | Restart the demo from scratch (force-recreate) |
-| `make demo-stop`          | Stop the demo (including Weaver)               |
-| `make demo-logs`          | Tail Weaver live-check output                  |
-| `make demo-generate`      | Regenerate dashboard 01 and alerts from the schema |
-| `make demo-generate-drift` | Regenerate dashboard 02 from the schema with the `# FIX(drift)` edits applied |
-| `make demo-provision`     | Copy generated artifacts into the Grafana provisioning dirs |
-| `make demo-check`         | Validate the telemetry schema                  |
-| `make demo-livecheck`     | Stop Weaver and print the live-check report    |
-| `make demo-build`         | Build payment, checkout and currency from this fork (run once before the demo) |
-| `make demo-build-payment` | Rebuild the payment service after code changes |
-| `make demo-restart-payment` | Restart payment after flipping the flag (the "deploy") |
+| Target                        | Description                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `make demo-build`             | Build payment, checkout and currency from this fork (once, before the demo) |
+| `make demo-start`             | Start the demo (idempotent, no-op if running)                               |
+| `make demo-restart`           | Restart the demo from scratch (force-recreate)                              |
+| `make demo-stop`              | Stop the demo (including Weaver)                                            |
+| `make demo-check`             | Validate the telemetry schema                                               |
+| `make demo-stats`             | Registry statistics (groups, attributes, metrics, incl. the semconv dependency) |
+| `make demo-generate`          | Generate dashboard 02 and its alerts from `telemetry-schema/`               |
+| `make demo-generate-baseline` | Generate dashboard 01 and its alerts from the schema with the `FIX(drift)` names applied |
+| `make demo-provision`         | Copy generated artifacts into the Grafana provisioning dirs                 |
+| `make demo-clean`             | Remove `output/` (the provisioned copies are kept)                          |
+| `make demo-livecheck`         | Live-check findings of the last 60s, one line per item and violation        |
+| `make demo-logs`              | Tail the full Weaver live-check output                                      |
+| `make demo-build-payment`     | Rebuild the payment service after code changes                              |
+| `make demo-restart-payment`   | Restart payment (needed after flipping the flag)                            |
 
 ## Demo Walkthrough
 
-### Step 1 -- See the Schema
-
-Open `telemetry-schema/` and show the YAML definitions. This is the single
-source of truth for every custom attribute and metric in the demo.
-
-```text
-telemetry-schema/
-+-- attributes/   # Attribute definitions by business domain
-+-- metrics/      # Metric definitions per service
-+-- services/     # Service-specific attribute references
-```
-
-The payment service defines `demo.payment.transactions` (a counter) with the
-attribute `demo.payment.currency`. The checkout service's `PlaceOrder` span
-carries `demo.order.amount` and `demo.order.items.count`.
-
-### Step 2 -- See Generated Artifacts
-
-Weaver codegen (`weaver-templates/registry/grafana/*.j2`) produces the
-dashboards and alert rules directly from the schema:
-
-```bash
-make demo-generate         # 01 + alerts, from telemetry-schema/
-make demo-generate-drift   # 02, from the schema with the FIX(drift) edits applied
-make demo-provision        # copy output/ into src/grafana/provisioning/
-```
-
-The generated artifacts live at:
-
-- **Dashboards**: `src/grafana/provisioning/dashboards/weaver/`
-  - `weaver-demo-dashboard.json`: **01 - Baseline: schema names (clean demo)**
-  - `weaver-demo-dashboard-02-drift.json`: **02 - After drift: renamed telemetry (flag ON)**
-- **Alert rules**: `src/grafana/provisioning/alerting/weaver-demo-alerting.yml`
-
-Both dashboards have the same layout: a header, the **Schema alerts** panel
-(the generated rules, so dashboard and alerts are in one place), then one
-panel per metric in the registry, grouped by the metric's attributes.
-
-01 and the alert rules use the registry names. 02 is the same template run
-against the schema *as the developer should have changed it*: the renamed
-names are marked with `# FIX(drift)` comments in `telemetry-schema/`
-(`metrics/payment.yaml`, `attributes/order.yaml`, `services/checkout.yaml`).
-`make demo-generate-drift` applies them on a temp copy; or apply them by hand
-and run `make demo-generate` to show the schema-driven fix live.
-
-The alert rules are tuned for a live demo: services export every 5s
-(`OTEL_METRIC_EXPORT_INTERVAL=5000` in `docker-compose-weaver.yml`), the
-group evaluates every 10s, and each rule fires when
-`absent_over_time(<metric>[15s])` is true.
-
-### Step 3 -- Verify the Happy Path
-
-1. Open **01 - Baseline**: <http://localhost:8080/grafana/d/weaver-01-baseline>
-1. **Schema alerts** panel: six rules, all **Normal**
-1. **Payment transaction counter** panel shows series per currency
-   (`USD`, `CAD`, ...) and every other panel has data
-1. Open **02 - After drift**: <http://localhost:8080/grafana/d/weaver-02-drift>
-   and confirm the `app.payment.transactions` panel is empty
-1. Open a checkout trace in Jaeger:
-   <http://localhost:8080/jaeger/ui/search?service=checkout&operation=oteldemo.CheckoutService%2FPlaceOrder>
-   and confirm the span carries `demo.order.amount` and `demo.order.items.count`
-
-### Step 4 -- Check Weaver Live-Check Conformance
-
-```bash
-make demo-logs
-```
-
-Weaver receives only the payment and checkout telemetry (see *How It Works*)
-and prints a report per sample. With the flag off, `demo.payment.transactions`
-and the `PlaceOrder` span come out clean; the remaining findings are
-SDK-internal metrics and gRPC-level attributes outside the demo registry.
-
-### Step 5 -- Break It
-
-This simulates a deploy where a developer "fixed" telemetry names by hand.
-
-1. Open the Feature Flag UI: <http://localhost:8080/feature>
-1. Toggle **telemetrySchemaBreak** to **on** (flagd reloads within seconds)
-1. Restart payment, as a deploy would: `docker compose ... restart payment`
-   (or `make demo-restart-payment`)
+The `telemetrySchemaBreak` flag is **on by default**: payment and checkout
+emit telemetry a developer "fixed" by hand, and nobody noticed. The demo has
+no moving parts: no flag flip, no restart, no Grafana reload. Everything is
+provisioned at `make demo-start`.
 
 With the flag on:
 
-- payment emits `app.payment.transactions` instead of
-  `demo.payment.transactions`, with attribute `currencyCode` instead of
-  `demo.payment.currency`
+- payment emits `app.payment.transactions` with the attribute `currencyCode`
+  instead of `demo.payment.transactions` with `demo.payment.currency`
 - checkout emits `orderAmount` and `orderItemsCount` on the `PlaceOrder` span
   instead of `demo.order.amount` and `demo.order.items.count`
 
-The restart matters: a process that keeps running still exports its old
-counter at a constant value, so the rate drops to a flat 0 but samples keep
-arriving and nothing goes absent. After a restart the old series stops.
+### Act 1 -- The schema
 
-### Step 6 -- Watch the Damage
+Open `telemetry-schema/` and show the YAML definitions. This is the single
+source of truth for every custom attribute and metric in the demo:
 
-Measured from the flag flip, with the restart issued at +10s:
+```text
+telemetry-schema/
++-- manifest.yaml  # registry id, semconv 1.44.0 as a dependency
++-- attributes/    # Attribute definitions by business domain
++-- metrics/       # Metric definitions per service
++-- services/      # Service-specific attribute references
+```
 
-1. **+25s**: **01 - Baseline** payment panel goes **No data**
-   (`rate(demo_payment_transactions_total[30s])` has no samples)
-1. **+30s**: the **Schema alerts** panel on both dashboards shows
-   *Weaver: demo.payment.transactions stopped being emitted* **Alerting**
-   (red). The other five rules stay Normal.
-1. **+40s**: **02 - After drift** fills up: `currencyCode=USD` series appear
-1. **Weaver catches it** -- `make demo-logs` shows within a minute:
-   - `Metric app.payment.transactions` -> `[violation] Metric does not exist in the registry`
-   - `currencyCode`, `orderAmount`, `orderItemsCount` ->
-     `[violation] Attribute ... does not exist in the registry`
-1. **Jaeger** shows `orderAmount` / `orderItemsCount` on new `PlaceOrder` spans
+`metrics/payment.yaml` declares `demo.payment.transactions` (counter) with the
+required attribute `demo.payment.currency`. `make demo-stats` shows what the
+registry resolves to once the semconv dependency is merged in.
 
-To recover: flag **off**, `make demo-restart-payment`; 01 is back and the
-alert is Normal within ~30s.
+### Act 2 -- Generate from the schema
 
-### Step 7 -- The Point
+```bash
+make demo-generate   # weaver registry generate ... grafana
+```
 
-Without Weaver, this is a **silent failure**. Dashboards go blank, alerts stop
-firing, and nobody knows why until an incident happens. With Weaver:
+`weaver-templates/registry/grafana/*.j2` turn the registry into
+`output/weaver-demo-dashboard.json` and `output/weaver-demo-alerting.yml`:
+one panel per metric of the payment, cart and currency services, grouped by
+the metric's attributes, and per counter a liveness alert plus one alert per
+required attribute. Every alert is linked to the panel of its metric.
 
-- **Live-check** catches the schema drift immediately
-- **Codegen** ensures dashboards and alerts always match the schema
-- The schema is the contract between instrumentation and observability tooling
+The same output is already provisioned as dashboard **02** (`make demo-provision`
+copies it; `make demo-clean` removes `output/`).
+
+### Act 3 -- The dashboard the team wrote
+
+Open **01 - Baseline: the dashboard the team wrote**:
+<http://localhost:8080/grafana/d/weaver-01-baseline>
+
+Same template, generated from the schema *as the code emits it today* (the
+`FIX(drift)` names). Payment, cart and currency panels have data; the
+**Schema alerts** column shows six rules, all green. Nothing here says the
+names are wrong.
+
+### Act 4 -- The dashboard generated from the schema
+
+Open **02 - Generated from the telemetry schema**:
+<http://localhost:8080/grafana/d/weaver-02-schema>
+
+Same panel titles, same alert titles, but the queries use the names declared
+in the schema:
+
+- **Payment transaction counter** is a flat zero line: no sample named
+  `demo_payment_transactions_total` arrives
+- two red alerts, both linked to that panel:
+  *Payment transaction counter: stopped being emitted* and
+  *Payment transaction counter: missing required attribute (currency code for the transaction)*
+- cart and currency are identical to 01: those services follow the schema
+
+### Act 5 -- Live-check names the culprit
+
+```bash
+make demo-livecheck
+```
+
+Weaver receives the payment and checkout telemetry (see *How It Works*) and
+compares it with the registry. The top lines, with sample counts:
+
+```text
+33x  Metric app.payment.transactions: Attribute 'currencyCode' does not exist in the registry.
+33x  Metric app.payment.transactions: Attribute key 'currencyCode' does not match name formatting rules.
+26x  Metric app.payment.transactions: Metric does not exist in the registry.
+ 3x  Span oteldemo.CheckoutService/PlaceOrder: Attribute 'orderAmount' does not exist in the registry.
+ 3x  Span oteldemo.CheckoutService/PlaceOrder: Attribute 'orderItemsCount' does not exist in the registry.
+```
+
+The rest of the list is deprecated semconv attributes (`rpc.system`,
+`net.peer.name`, `messaging.operation`, ...) still used by upstream
+instrumentation: a second class of drift the registry catches for free.
+
+### The point
+
+Dashboards, alerts and live-check all came from one YAML. The dashboard the
+team wrote (01) cannot see the drift because it was written against the drift.
+The one generated from the contract (02) can, and so can the alert rules and
+Weaver. The fix for the metric name goes in the code (or, if the new name is
+the one you want, in the schema: `make demo-generate` then follows). The fix
+for `currencyCode` can only go in the code: a name without a namespace fails
+the naming rules whatever the registry says.
+
+To show the flip the other way (flag off, `make demo-restart-payment`): within
+~40s dashboard 01 goes red and 02 goes green.
 
 ## How It Works
 
@@ -386,8 +369,8 @@ emitter in the pipeline as registries become available.
 | `weaver-templates/registry/grafana/weaver.yaml`                         | Weaver codegen configuration                                             |
 | `docker-compose-weaver.yml`                                             | Compose overlay adding the Weaver sidecar                                |
 | `src/otel-collector/otelcol-config-weaver.yml`                          | Collector extras config for OTLP fan-out to Weaver                       |
-| `src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard.json` | Generated Grafana dashboard                                              |
-| `src/grafana/provisioning/alerting/weaver-demo-alerting.yml`            | Generated Grafana alert rule                                             |
+| `src/grafana/provisioning/dashboards/weaver/weaver-demo-dashboard-0*.json` | Generated dashboards 01 (baseline) and 02 (schema)                   |
+| `src/grafana/provisioning/alerting/weaver-demo-alerting-0*.yml`         | Generated alert rules, folders Weaver 01 / Weaver 02                     |
 | `src/grafana/provisioning/dashboards/weaver.yaml`                       | Grafana dashboard provisioning config                                    |
 | `src/flagd/demo.flagd.json`                                             | Feature flags: includes `telemetrySchemaBreak`                           |
 | `src/payment/charge.js`                                                 | Payment service: reads the flag, conditionally breaks telemetry          |
@@ -403,13 +386,15 @@ Check that the `telemetry-schema/` directory is present and contains valid YAML:
 make demo-check
 ```
 
-### Dashboard shows "No data" even with flag OFF
+### Dashboard 01 shows flat zero lines or red alerts
 
-Wait at least 3 minutes after startup for the load generator to produce payment
-transactions. Verify metrics reach Prometheus:
+Wait at least 2 minutes after startup for the load generator to produce
+traffic. Any restart of the collector also starves every metric for ~20s and
+trips all absence alerts; they clear within 30s. Verify samples reach
+Prometheus:
 
 ```bash
-curl -s 'http://localhost:9090/api/v1/query?query=demo_payment_transactions_total' | jq .
+curl -s 'http://localhost:9090/api/v1/query?query=app_payment_transactions_total' | jq .
 ```
 
 ### Collector fails to start with the overlay
