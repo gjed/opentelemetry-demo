@@ -28,6 +28,7 @@ services:
       - "0"
       - --skip-policies
       - --no-stats
+      - --include-unreferenced
     ports:
       - "4320:4320"   # admin port (/stop endpoint)
     volumes:
