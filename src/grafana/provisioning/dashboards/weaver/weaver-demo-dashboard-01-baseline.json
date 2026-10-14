@@ -19,7 +19,7 @@
     {
       "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
       "id": 1,      "options": {
-        "content": "### What the team sees today\n\nPanels and alerts written against the metric and attribute names the services **currently emit**. Everything is green: nothing here says the names drifted from the telemetry schema.",
+        "content": "### What the team sees today\n\nPanels and alerts written by hand, on the label names the team knew when they built them. The payment rate is fine and every alert is green. The error-rate panel reads the **legacy label** (`paymentError`): since the service moved to the schema name, this panel can no longer see a single failure.",
         "mode": "markdown"
       },
       "title": "01 - Baseline: the dashboard the team wrote",
